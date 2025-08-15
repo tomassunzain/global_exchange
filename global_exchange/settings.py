@@ -37,7 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'usuarios',
 ]
+
+AUTH_USER_MODEL = 'usuarios.User'
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "no-reply@tu-dominio.com"
+SITE_URL = "http://localhost:8000"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -75,8 +82,12 @@ WSGI_APPLICATION = 'global_exchange.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'db_globalex',
+        'USER': 'postgres',
+        'PASSWORD': 'masterkey',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
