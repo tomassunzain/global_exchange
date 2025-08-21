@@ -8,11 +8,14 @@ from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.contrib.auth.views import LoginView
 
 from .forms import RegistroForm, LoginForm
 
 User = get_user_model()
 
+def dashboard_view(request):
+    return render(request, "dashboard.html")
 
 def _enviar_verificacion(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))

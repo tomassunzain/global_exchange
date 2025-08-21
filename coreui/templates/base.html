@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Global Exchange{% endblock %}</title>
+
+  <!-- CoreUI CSS -->
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="c-app">
+
+  <!-- Sidebar -->
+  <div class="c-sidebar c-sidebar-dark c-sidebar-fixed">
+    <div class="c-sidebar-brand">
+      <h4 class="text-white ms-3">Global Exchange</h4>
+    </div>
+    <ul class="c-sidebar-nav">
+      <li class="c-sidebar-nav-item">
+        <a class="c-sidebar-nav-link" href="{% url 'usuarios:dashboard' %}">
+          <i class="c-sidebar-nav-icon cil-speedometer"></i> Dashboard
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Wrapper -->
+  <div class="c-wrapper">
+    <!-- Header -->
+    <header class="c-header c-header-light">
+      <ul class="c-header-nav ms-auto me-4">
+        {% if request.user.is_authenticated %}
+          <li class="nav-item me-3">Hola, {{ request.user.username }}</li>
+          <li class="nav-item">
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'usuarios:logout' %}">Salir</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="btn btn-sm btn-primary" href="{% url 'usuarios:login' %}">Ingresar</a>
+          </li>
+        {% endif %}
+      </ul>
+    </header>
+
+    <!-- Main Content -->
+    <div class="c-body">
+      <main class="c-main p-4">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- CoreUI JS -->
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/widgets.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

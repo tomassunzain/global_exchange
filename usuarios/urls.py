@@ -12,5 +12,7 @@ urlpatterns = [
     path('roles/', views.roles_list, name='roles_list'),
     path('roles/<int:group_id>/editar/', views.rol_editar, name='rol_editar'),
     path('usuarios/<int:user_id>/asignar-rol/', views.asignar_rol_a_usuario, name='asignar_rol'),
+    path('', views.dashboard_view, name='dashboard'),
+
 ]
 

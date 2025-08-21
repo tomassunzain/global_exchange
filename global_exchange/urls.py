@@ -21,5 +21,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
-    path('', lambda r: redirect('usuarios:login'), name='home'),
+    path('', lambda r: redirect('usuarios:dashboard'), name='home'),
 ]
