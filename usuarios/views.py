@@ -240,10 +240,30 @@ def rol_edit(request, role_id):
 @role_required("Admin")
 def rol_delete(request, role_id):
     role = get_object_or_404(Role, pk=role_id)
+
     if request.method == "POST":
+        # Contar usuarios afectados antes de eliminar
+        users_count = role.user_roles.count()
+        affected_users = [ur.user.email for ur in role.user_roles.all()]
+
+        # Eliminar el rol (esto también eliminará las relaciones UserRole por CASCADE)
+        role_name = role.name
         role.delete()
-        messages.success(request, "Rol eliminado.")
+
+        # Mensaje de éxito diferente según si había usuarios asignados
+        if users_count > 0:
+            messages.success(
+                request,
+                f'Rol "{role_name}" eliminado exitosamente. '
+                f'{users_count} usuario(s) ya no tienen este rol asignado: {", ".join(affected_users[:3])}'
+                + (f' y {users_count - 3} más.' if users_count > 3 else '.')
+            )
+        else:
+            messages.success(request, f'Rol "{role_name}" eliminado exitosamente.')
+
         return redirect("usuarios:roles_list")
+
+    # Para GET request, mostrar página de confirmación
     return render(request, "usuarios/rol_delete_confirm.html", {"role": role})
 
 
