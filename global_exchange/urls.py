@@ -16,10 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.shortcuts import redirect
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.static import serve
+from django.conf import settings
+import os
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
     path('', lambda r: redirect('usuarios:login'), name='home'),
+    re_path(r"^docs/(?P<path>.*)$", serve, {"document_root": os.path.join(settings.BASE_DIR, "docs/build/html")}, name="documentacion",),
 ]
