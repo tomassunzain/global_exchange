@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 class Cliente(models.Model):
     SEGMENTOS = [
@@ -10,4 +10,4 @@ class Cliente(models.Model):
 
     nombre = models.CharField(max_length=100)
     tipo = models.CharField(max_length=10, choices=SEGMENTOS, default="MIN")
-    usuario = models.ManyToManyfield(User, related_name="clientes")
+    usuario = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="clientes")
