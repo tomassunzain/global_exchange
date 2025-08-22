@@ -1,23 +1,55 @@
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout, get_user_model
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth import login, logout, get_user_model
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.models import Group, Permission
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.contrib.auth.views import LoginView
 
-from .forms import RegistroForm, LoginForm
+from .decorators import role_required
+from .forms import RegistroForm, LoginForm, UserForm
+from .models import Role, UserRole
 
 User = get_user_model()
 
 def dashboard_view(request):
     return render(request, "dashboard.html")
 
-def _enviar_verificacion(user):
+
+@login_required
+def usuarios_list(request):
+    usuarios = User.objects.all().order_by("-id")
+    return render(request, "usuarios/usuarios_list.html", {"usuarios": usuarios})
+
+@login_required
+def usuario_edit(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+    if request.method == "POST":
+        form = UserForm(request.POST, instance=usuario)
+        if form.is_valid():
+            user = form.save(commit=False)
+            if form.cleaned_data["password"]:
+                user.set_password(form.cleaned_data["password"])
+            user.save()
+            messages.success(request, "Usuario actualizado.")
+            return redirect("usuarios:usuarios_list")
+    else:
+        form = UserForm(instance=usuario)
+    return render(request, "usuarios/usuario_form.html", {"form": form, "usuario": usuario})
+
+@login_required
+def usuario_delete(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+    if request.method == "POST":
+        usuario.delete()
+        messages.success(request, "Usuario eliminado.")
+        return redirect("usuarios:usuarios_list")
+    return render(request, "usuarios/usuario_delete_confirm.html", {"usuario": usuario})
+
+
+def enviar_verificacion(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     url = f"{settings.SITE_URL}/usuarios/verificar/{uid}/{token}/"
@@ -39,7 +71,7 @@ def registro(request):
             user = User.objects.create_user(email=email, password=form.cleaned_data['password1'])
             user.is_active = False  # inactivo hasta verificar
             user.save()
-            _enviar_verificacion(user)
+            enviar_verificacion(user)
             messages.success(request, "Registro exitoso. Revisa tu correo para activar la cuenta.")
             return redirect('usuarios:login')
     else:
@@ -75,7 +107,7 @@ def login_view(request):
                 messages.error(request, "Tu cuenta aun no esta verificada.")
                 return redirect('usuarios:login')
             login(request, user)
-            return redirect('home')
+            return redirect('usuarios:dashboard')
     else:
         form = LoginForm()
     return render(request, 'usuarios/login.html', {'form': form})
@@ -86,36 +118,56 @@ def logout_view(request):
 
 
 @login_required
-@permission_required('auth.view_group', raise_exception=True)
+@role_required("Admin")
 def roles_list(request):
-    grupos = Group.objects.all().prefetch_related('permissions')
-    return render(request, 'usuarios/roles_list.html', {'grupos': grupos})
+    roles = Role.objects.all()
+    return render(request, "usuarios/roles_list.html", {"roles": roles})
 
 
 @login_required
-@permission_required('auth.change_group', raise_exception=True)
-def rol_editar(request, group_id):
-    grupo = get_object_or_404(Group, pk=group_id)
-    permisos = Permission.objects.select_related('content_type').all()
-
-    if request.method == 'POST':
-        ids = request.POST.getlist('permissions')
-        grupo.permissions.set(permisos.filter(id__in=ids))
-        messages.success(request, "Permisos actualizados.")
-        return redirect('usuarios:roles_list')
-
-    return render(request, 'usuarios/rol_editar.html', {'grupo': grupo, 'permisos': permisos})
+def rol_create(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        if name:
+            Role.objects.create(name=name, description=description)
+            messages.success(request, "Rol creado.")
+            return redirect("usuarios:roles_list")
+    return render(request, "usuarios/rol_form.html")
 
 
 @login_required
-@permission_required('usuarios.change_user', raise_exception=True)
+@role_required("Admin")
+def rol_edit(request, role_id):
+    role = get_object_or_404(Role, pk=role_id)
+    if request.method == "POST":
+        role.name = request.POST.get("name")
+        role.description = request.POST.get("description")
+        role.save()
+        messages.success(request, "Rol actualizado.")
+        return redirect("usuarios:roles_list")
+    return render(request, "usuarios/rol_form.html", {"role": role})
+
+
+@login_required
+def rol_delete(request, role_id):
+    role = get_object_or_404(Role, pk=role_id)
+    if request.method == "POST":
+        role.delete()
+        messages.success(request, "Rol eliminado.")
+        return redirect("usuarios:roles_list")
+    return render(request, "usuarios/rol_delete_confirm.html", {"role": role})
+
+
+@login_required
 def asignar_rol_a_usuario(request, user_id):
     usuario = get_object_or_404(User, pk=user_id)
-    grupos = Group.objects.all()
-    if request.method == 'POST':
-        ids = request.POST.getlist('groups')
-        usuario.groups.set(grupos.filter(id__in=ids))
+    roles = Role.objects.all()
+    if request.method == "POST":
+        ids = request.POST.getlist("roles")
+        UserRole.objects.filter(user=usuario).delete()
+        for rid in ids:
+            UserRole.objects.create(user=usuario, role_id=rid)
         messages.success(request, "Roles asignados.")
-        return redirect('usuarios:usuarios_list')
-    return render(request, 'usuarios/asignar_rol.html', {'usuario': usuario, 'grupos': grupos})
-
+        return redirect("usuarios:roles_list")
+    return render(request, "usuarios/asignar_rol.html", {"usuario": usuario, "roles": roles})

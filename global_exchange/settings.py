@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'widget_tweaks',
     'usuarios',
+    'clientes',
 ]
 
 AUTH_USER_MODEL = 'usuarios.User'
@@ -128,7 +130,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / "coreui" / "static",  # 👈 tu carpeta con CoreUI
+    BASE_DIR / "coreui" / "static",
 ]
 
 # Default primary key field type

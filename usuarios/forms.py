@@ -24,3 +24,10 @@ class RegistroForm(forms.Form):
 
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label="Correo")
+
+class UserForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput, required=False)
+
+    class Meta:
+        model = User
+        fields = ["email", "is_active", "password"]

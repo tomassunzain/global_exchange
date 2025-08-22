@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Global Exchange{% endblock %}</title>
+  <title class="text-xl-start">{% block title %}Global Exchange{% endblock %}</title>
 
   <!-- CoreUI CSS -->
   <link href="{% static 'css/style.css' %}" rel="stylesheet">
@@ -33,7 +33,7 @@
     <header class="c-header c-header-light">
       <ul class="c-header-nav ms-auto me-4">
         {% if request.user.is_authenticated %}
-          <li class="nav-item me-3">Hola, {{ request.user.username }}</li>
+          <li class="nav-item me-3">Hola, {{ request.username }}</li>
           <li class="nav-item">
             <a class="btn btn-sm btn-outline-danger" href="{% url 'usuarios:logout' %}">Salir</a>
           </li>

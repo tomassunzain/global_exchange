@@ -1,0 +1,30 @@
+# --- Core Django runtime ---
+Django==5.2.5
+asgiref==3.9.1
+sqlparse==0.5.3
+psycopg2-binary==2.9.10
+python-dotenv==1.1.1
+requests==2.32.5
+urllib3==2.5.0
+idna==3.10
+certifi==2025.8.3
+charset-normalizer==3.4.3
+
+# --- Django ecosystem ---
+django-widget-tweaks==1.5.0
+django-browser-reload==1.18.0
+
+# --- Sphinx documentation stack ---
+alabaster==1.0.0
+babel==2.17.0
+docutils==0.21.2
+imagesize==1.4.1
+Jinja2==3.1.6
+MarkupSafe==3.0.2
+Pygments==2.19.2
+snowballstemmer==3.0.1
+myst-parser==4.0.1
+markdown-it-py==3.0.0
+mdit-py-plugins==0.5.0
+mdurl==0.1.2
+rich==14.1.0
