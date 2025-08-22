@@ -30,11 +30,94 @@ class LoginForm(AuthenticationForm):
 
 
 class UserForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput, required=False)
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nueva contraseña'
+        }),
+        required=False,
+        help_text="Dejar en blanco para mantener la contraseña actual"
+    )
 
     class Meta:
         model = User
         fields = ["email", "is_active", "password"]
+        widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'usuario@ejemplo.com'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            })
+        }
+        help_texts = {
+            'email': 'Dirección de correo electrónico única',
+            'is_active': 'Solo usuarios activos pueden iniciar sesión'
+        }
+
+
+class UserCreateForm(forms.ModelForm):
+    """Formulario para crear usuarios desde el panel de administración"""
+    password1 = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Contraseña'
+        }),
+        min_length=8,
+        help_text="Mínimo 8 caracteres"
+    )
+    password2 = forms.CharField(
+        label="Confirmar contraseña",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirmar contraseña'
+        }),
+        min_length=8,
+        help_text="Repite la contraseña anterior"
+    )
+
+    class Meta:
+        model = User
+        fields = ["email", "is_active"]
+        widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'usuario@ejemplo.com'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            })
+        }
+        help_texts = {
+            'email': 'Dirección de correo electrónico única',
+            'is_active': 'Solo usuarios activos pueden iniciar sesión'
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise ValidationError("Ya existe un usuario con este correo.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 and password2:
+            if password1 != password2:
+                raise ValidationError("Las contraseñas no coinciden.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+        return user
 
 
 class AsignarRolForm(forms.Form):

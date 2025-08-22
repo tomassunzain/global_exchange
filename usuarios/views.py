@@ -9,7 +9,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from .decorators import role_required
-from .forms import RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm
+from .forms import RegistroForm, LoginForm, UserForm, UserCreateForm, AsignarRolForm, RoleForm
 from .models import Role, UserRole
 
 User = get_user_model()
@@ -39,9 +39,69 @@ def dashboard_view(request):
 
 
 @login_required
+@role_required("Admin")
+def usuario_create(request):
+    """Vista para crear usuarios desde el panel de administración"""
+    if request.method == "POST":
+        form = UserCreateForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f"Usuario {user.email} creado exitosamente.")
+            return redirect("usuarios:usuarios_list")
+    else:
+        form = UserCreateForm()
+        # Por defecto, los usuarios creados desde admin están activos
+        form.fields['is_active'].initial = True
+
+    return render(request, "usuarios/usuario_form.html", {"form": form, "usuario": None})
+
+
+@login_required
 def usuarios_list(request):
-    usuarios = User.objects.all().order_by("-id")
-    return render(request, "usuarios/usuarios_list.html", {"usuarios": usuarios})
+    from django.core.paginator import Paginator
+
+    # Obtener parámetros de búsqueda y filtros
+    search_query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    role_filter = request.GET.get('role', '')
+
+    # Consulta base
+    usuarios = User.objects.all()
+
+    # Aplicar filtros
+    if search_query:
+        usuarios = usuarios.filter(email__icontains=search_query)
+
+    if status_filter == 'active':
+        usuarios = usuarios.filter(is_active=True)
+    elif status_filter == 'inactive':
+        usuarios = usuarios.filter(is_active=False)
+
+    if role_filter:
+        usuarios = usuarios.filter(user_roles__role__name=role_filter).distinct()
+
+    # Ordenar por fecha de creación (más recientes primero)
+    usuarios = usuarios.order_by("-date_joined")
+
+    # Paginación
+    paginator = Paginator(usuarios, 10)  # 10 usuarios por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Obtener todos los roles para el filtro
+    roles = Role.objects.all()
+
+    context = {
+        "usuarios": page_obj,
+        "page_obj": page_obj,
+        "roles": roles,
+        "search_query": search_query,
+        "status_filter": status_filter,
+        "role_filter": role_filter,
+        "total_usuarios": usuarios.count(),
+    }
+
+    return render(request, "usuarios/usuarios_list.html", context)
 
 
 @login_required

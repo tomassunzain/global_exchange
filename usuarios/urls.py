@@ -10,11 +10,12 @@ urlpatterns = [
     # Autenticación
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-    path('registro/', views.registro, name='registro'),
+    path('registro/', views.registro, name='registro'),  # Registro público
     path('verificar/<uidb64>/<token>/', views.verificar_email, name='verificar'),
 
     # Gestión de usuarios
     path('usuarios/', views.usuarios_list, name='usuarios_list'),
+    path('usuarios/crear/', views.usuario_create, name='usuario_create'),  # NUEVA: Crear usuario interno
     path('usuarios/<int:user_id>/editar/', views.usuario_edit, name='usuario_edit'),
     path('usuarios/<int:user_id>/eliminar/', views.usuario_delete, name='usuario_delete'),
     path('usuarios/<int:user_id>/roles/', views.ver_usuario_roles, name='ver_usuario_roles'),
