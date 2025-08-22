@@ -9,19 +9,40 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from .decorators import role_required
-from .forms import RegistroForm, LoginForm, UserForm
+from .forms import RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm
 from .models import Role, UserRole
 
 User = get_user_model()
 
+
 def dashboard_view(request):
-    return render(request, "dashboard.html")
+    # Estadísticas para el dashboard
+    context = {}
+
+    if request.user.is_authenticated:
+        from django.db.models import Count
+
+        # Contar usuarios
+        total_usuarios = User.objects.count()
+        usuarios_activos = User.objects.filter(is_active=True).count()
+
+        # Contar roles
+        total_roles = Role.objects.count()
+
+        context.update({
+            'total_usuarios': total_usuarios,
+            'usuarios_activos': usuarios_activos,
+            'total_roles': total_roles,
+        })
+
+    return render(request, "dashboard.html", context)
 
 
 @login_required
 def usuarios_list(request):
     usuarios = User.objects.all().order_by("-id")
     return render(request, "usuarios/usuarios_list.html", {"usuarios": usuarios})
+
 
 @login_required
 def usuario_edit(request, user_id):
@@ -38,6 +59,7 @@ def usuario_edit(request, user_id):
     else:
         form = UserForm(instance=usuario)
     return render(request, "usuarios/usuario_form.html", {"form": form, "usuario": usuario})
+
 
 @login_required
 def usuario_delete(request, user_id):
@@ -112,6 +134,7 @@ def login_view(request):
         form = LoginForm()
     return render(request, 'usuarios/login.html', {'form': form})
 
+
 def logout_view(request):
     logout(request)
     return redirect('usuarios:login')
@@ -125,15 +148,17 @@ def roles_list(request):
 
 
 @login_required
+@role_required("Admin")
 def rol_create(request):
     if request.method == "POST":
-        name = request.POST.get("name")
-        description = request.POST.get("description")
-        if name:
-            Role.objects.create(name=name, description=description)
-            messages.success(request, "Rol creado.")
+        form = RoleForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Rol creado exitosamente.")
             return redirect("usuarios:roles_list")
-    return render(request, "usuarios/rol_form.html")
+    else:
+        form = RoleForm()
+    return render(request, "usuarios/rol_form.html", {"form": form})
 
 
 @login_required
@@ -141,15 +166,18 @@ def rol_create(request):
 def rol_edit(request, role_id):
     role = get_object_or_404(Role, pk=role_id)
     if request.method == "POST":
-        role.name = request.POST.get("name")
-        role.description = request.POST.get("description")
-        role.save()
-        messages.success(request, "Rol actualizado.")
-        return redirect("usuarios:roles_list")
-    return render(request, "usuarios/rol_form.html", {"role": role})
+        form = RoleForm(request.POST, instance=role)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Rol actualizado exitosamente.")
+            return redirect("usuarios:roles_list")
+    else:
+        form = RoleForm(instance=role)
+    return render(request, "usuarios/rol_form.html", {"form": form, "role": role})
 
 
 @login_required
+@role_required("Admin")
 def rol_delete(request, role_id):
     role = get_object_or_404(Role, pk=role_id)
     if request.method == "POST":
@@ -160,14 +188,42 @@ def rol_delete(request, role_id):
 
 
 @login_required
+@role_required("Admin")
 def asignar_rol_a_usuario(request, user_id):
     usuario = get_object_or_404(User, pk=user_id)
-    roles = Role.objects.all()
+
     if request.method == "POST":
-        ids = request.POST.getlist("roles")
-        UserRole.objects.filter(user=usuario).delete()
-        for rid in ids:
-            UserRole.objects.create(user=usuario, role_id=rid)
-        messages.success(request, "Roles asignados.")
-        return redirect("usuarios:roles_list")
-    return render(request, "usuarios/asignar_rol.html", {"usuario": usuario, "roles": roles})
+        form = AsignarRolForm(request.POST, user=usuario)
+        if form.is_valid():
+            # Limpiar roles actuales del usuario
+            UserRole.objects.filter(user=usuario).delete()
+
+            # Asignar nuevos roles seleccionados
+            selected_roles = form.cleaned_data['roles']
+            for role_id in selected_roles:
+                UserRole.objects.create(user=usuario, role_id=role_id)
+
+            if selected_roles:
+                messages.success(request, f"Roles asignados correctamente a {usuario.email}.")
+            else:
+                messages.info(request, f"Se eliminaron todos los roles de {usuario.email}.")
+            return redirect("usuarios:usuarios_list")
+    else:
+        form = AsignarRolForm(user=usuario)
+
+    return render(request, "usuarios/asignar_rol.html", {
+        "form": form,
+        "usuario": usuario
+    })
+
+
+@login_required
+def ver_usuario_roles(request, user_id):
+    """Vista para ver los roles de un usuario específico"""
+    usuario = get_object_or_404(User, pk=user_id)
+    roles_usuario = UserRole.objects.filter(user=usuario).select_related('role')
+
+    return render(request, "usuarios/usuario_roles.html", {
+        "usuario": usuario,
+        "roles_usuario": roles_usuario
+    })

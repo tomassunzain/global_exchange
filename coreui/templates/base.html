@@ -41,44 +41,101 @@
     </div>
 
     <ul class="sidebar-nav" data-coreui="navigation" data-simplebar>
+      <!-- Dashboard -->
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'usuarios:dashboard' %}">
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'usuarios:dashboard' %}">
           <i class="nav-icon bi bi-speedometer2"></i>
           Dashboard
         </a>
       </li>
 
-      {% comment %}
-      <!-- Ejemplo de más elementos del menú -->
-      <li class="nav-title">Gestión</li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">
-          <i class="nav-icon bi bi-people"></i>
-          Usuarios
-        </a>
-      </li>
+      {% if request.user.is_authenticated %}
+        <!-- Gestión de Usuarios -->
+        <li class="nav-title">Gestión</li>
 
-      <li class="nav-group">
-        <a class="nav-link nav-group-toggle" href="#">
-          <i class="nav-icon bi bi-gear"></i>
-          Configuración
-        </a>
-        <ul class="nav-group-items compact">
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-              General
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-              Usuarios
-            </a>
-          </li>
-        </ul>
-      </li>
-      {% endcomment %}
+        <li class="nav-group {% if 'usuarios' in request.resolver_match.url_name or 'usuario' in request.resolver_match.url_name %}show{% endif %}">
+          <a class="nav-link nav-group-toggle" href="#">
+            <i class="nav-icon bi bi-people"></i>
+            Usuarios
+          </a>
+          <ul class="nav-group-items compact">
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'usuarios_list' %}active{% endif %}" href="{% url 'usuarios:usuarios_list' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Lista de Usuarios
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'usuarios:registro' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Nuevo Usuario
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Gestión de Roles -->
+        <li class="nav-group {% if 'roles' in request.resolver_match.url_name or 'rol' in request.resolver_match.url_name %}show{% endif %}">
+          <a class="nav-link nav-group-toggle" href="#">
+            <i class="nav-icon bi bi-shield-check"></i>
+            Roles y Permisos
+          </a>
+          <ul class="nav-group-items compact">
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'roles_list' %}active{% endif %}" href="{% url 'usuarios:roles_list' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Lista de Roles
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'rol_create' %}active{% endif %}" href="{% url 'usuarios:rol_create' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Nuevo Rol
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Configuración -->
+        <li class="nav-title">Sistema</li>
+        <li class="nav-group">
+          <a class="nav-link nav-group-toggle" href="#">
+            <i class="nav-icon bi bi-gear"></i>
+            Configuración
+          </a>
+          <ul class="nav-group-items compact">
+            <li class="nav-item">
+              <a class="nav-link" href="#">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                General
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Seguridad
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Reportes -->
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="nav-icon bi bi-bar-chart"></i>
+            Reportes
+          </a>
+        </li>
+
+        <!-- Ayuda -->
+        <li class="nav-divider"></li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="nav-icon bi bi-question-circle"></i>
+            Ayuda
+          </a>
+        </li>
+      {% endif %}
     </ul>
 
     <div class="sidebar-footer border-top d-none d-md-flex">
@@ -95,24 +152,29 @@
           <i class="bi bi-list fs-4"></i>
         </button>
 
-        <!-- Navigation Links (opcional) -->
+        <!-- Navigation Links -->
         <ul class="header-nav d-none d-lg-flex">
           <li class="nav-item">
             <a class="nav-link" href="{% url 'usuarios:dashboard' %}">Dashboard</a>
           </li>
-          {% comment %}
-          <li class="nav-item"><a class="nav-link" href="#">Usuarios</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Configuración</a></li>
-          {% endcomment %}
+          {% if request.user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'usuarios:usuarios_list' %}">Usuarios</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'usuarios:roles_list' %}">Roles</a>
+            </li>
+          {% endif %}
         </ul>
 
         <!-- Right side navigation -->
         <ul class="header-nav ms-auto">
           {% if request.user.is_authenticated %}
-            <!-- Notificaciones (opcional) -->
+            <!-- Notificaciones -->
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <a class="nav-link" href="#" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Notificaciones">
                 <i class="bi bi-bell fs-5"></i>
+                <span class="badge rounded-pill badge-sm bg-danger position-absolute top-0 end-0">3</span>
               </a>
             </li>
 
@@ -155,30 +217,31 @@
               <a class="nav-link py-0 pe-0" data-coreui-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
                 <div class="avatar avatar-md">
                   <div class="avatar-img bg-primary text-white d-flex align-items-center justify-content-center">
-                    {% if request.user.username %}
-                      {{ request.user.username|first|upper }}
-                    {% else %}
-                      U
-                    {% endif %}
+                    {{ request.user.email|first|upper }}
                   </div>
                 </div>
               </a>
               <div class="dropdown-menu dropdown-menu-end pt-0">
                 <div class="dropdown-header bg-body-tertiary text-body-secondary fw-semibold rounded-top mb-2">
-                  {% if request.user.username %}
-                    Hola, {{ request.user.username }}
-                  {% else %}
-                    Usuario
-                  {% endif %}
+                  Hola, {{ request.user.email|truncatechars:20 }}
                 </div>
                 <a class="dropdown-item" href="#">
                   <i class="bi bi-person me-2"></i>
-                  Perfil
+                  Mi Perfil
                 </a>
                 <a class="dropdown-item" href="#">
                   <i class="bi bi-gear me-2"></i>
                   Configuración
                 </a>
+                {% if request.user.get_roles %}
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-header">Mis Roles:</div>
+                  {% for role in request.user.get_roles %}
+                    <span class="dropdown-item-text">
+                      <small class="badge bg-primary">{{ role }}</small>
+                    </span>
+                  {% endfor %}
+                {% endif %}
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="{% url 'usuarios:logout' %}">
                   <i class="bi bi-box-arrow-right me-2"></i>
@@ -201,7 +264,7 @@
           <ol class="breadcrumb my-0">
             <li class="breadcrumb-item">
               {% block breadcrumb %}
-                <span>Inicio</span>
+                <a href="{% url 'usuarios:dashboard' %}">Inicio</a>
               {% endblock %}
             </li>
           </ol>
@@ -212,6 +275,25 @@
     <!-- Main Content -->
     <div class="body flex-grow-1">
       <div class="container-lg px-4">
+        <!-- Mensajes del sistema -->
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+              {% if message.tags == 'error' %}
+                <i class="bi bi-exclamation-triangle me-2"></i>
+              {% elif message.tags == 'success' %}
+                <i class="bi bi-check-circle me-2"></i>
+              {% elif message.tags == 'warning' %}
+                <i class="bi bi-exclamation-circle me-2"></i>
+              {% else %}
+                <i class="bi bi-info-circle me-2"></i>
+              {% endif %}
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
         {% block content %}{% endblock %}
       </div>
     </div>
@@ -220,12 +302,18 @@
     <footer class="footer px-4">
       <div>
         <strong>Global Exchange</strong> &copy; 2025
+        {% if request.user.is_authenticated %}
+          <span class="text-muted ms-2">- Conectado como {{ request.user.email }}</span>
+        {% endif %}
       </div>
       <div class="ms-auto">
         Powered by CoreUI
       </div>
     </footer>
   </div>
+
+  <!-- CoreUI JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@coreui/coreui@5.0.0/dist/js/coreui.bundle.min.js"></script>
 
   <!-- Header scroll effect -->
   <script>
@@ -236,10 +324,16 @@
         header.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0);
       }
     });
+
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+    });
   </script>
 
-  {% block extra_js %}
-
-  {% endblock %}
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

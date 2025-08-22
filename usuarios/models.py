@@ -54,7 +54,8 @@ class User(AbstractUser):
         return self.user_roles.filter(role__name__in=role_names).exists()
 
     def get_roles(self) -> list[str]:
-        return list(self.user_role.values_list("role__name", flat=True))
+        # Corregido: era user_role, debe ser user_roles
+        return list(self.user_roles.values_list("role__name", flat=True))
 
 class Role(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -62,6 +63,10 @@ class Role(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = "Rol"
+        verbose_name_plural = "Roles"
 
 
 class UserRole(models.Model):
@@ -71,6 +76,8 @@ class UserRole(models.Model):
 
     class Meta:
         unique_together = ("user", "role")
+        verbose_name = "Rol de Usuario"
+        verbose_name_plural = "Roles de Usuario"
 
     def __str__(self):
         return f"{self.user.email} → {self.role.name}"
