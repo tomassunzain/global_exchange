@@ -21,6 +21,9 @@ urlpatterns = [
     path('usuarios/<int:user_id>/roles/', views.ver_usuario_roles, name='ver_usuario_roles'),
     path('usuarios/<int:user_id>/asignar-rol/', views.asignar_rol_a_usuario, name='asignar_rol'),
 
+    #Asignar Clientes a un Usuario
+    path("<int:user_id>/asignar-clientes/", views.asignar_clientes_a_usuario, name="asignar_clientes"),
+
     # Gestión de roles
     path('roles/', views.roles_list, name='roles_list'),
     path('roles/nuevo/', views.rol_create, name='rol_create'),

@@ -10,4 +10,7 @@ class Cliente(models.Model):
 
     nombre = models.CharField(max_length=100)
     tipo = models.CharField(max_length=10, choices=SEGMENTOS, default="MIN")
-    usuario = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="clientes")
+    usuarios = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="clientes")
+
+    def __str__(self):
+        return f"{self.nombre} ({self.get_tipo_display()})"

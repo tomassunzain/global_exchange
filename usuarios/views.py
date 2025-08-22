@@ -9,8 +9,9 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from .decorators import role_required
-from .forms import RegistroForm, LoginForm, UserForm, UserCreateForm, AsignarRolForm, RoleForm
+from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm, UserCreateForm
 from .models import Role, UserRole
+from clientes.models import Cliente
 
 User = get_user_model()
 
@@ -29,10 +30,17 @@ def dashboard_view(request):
         # Contar roles
         total_roles = Role.objects.count()
 
+        # Contar clientes
+        total_clientes = Cliente.objects.count()
+
         context.update({
             'total_usuarios': total_usuarios,
+            'total_clientes' : total_clientes,
             'usuarios_activos': usuarios_activos,
             'total_roles': total_roles,
+            'tasa_usd': 7300,
+            'tasa_eur': 8000,
+            'tasa_timestamp': '2023-10-10T12:00:00Z'
         })
 
     return render(request, "dashboard.html", context)
@@ -307,3 +315,17 @@ def ver_usuario_roles(request, user_id):
         "usuario": usuario,
         "roles_usuario": roles_usuario
     })
+
+@login_required
+def asignar_clientes_a_usuario(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+    if request.method == "POST":
+        form = AsignarClientesAUsuarioForm(request.POST, usuario=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Clientes asignados a {usuario.email}.")
+            return redirect("usuarios:usuarios_list")
+    else:
+        form = AsignarClientesAUsuarioForm(usuario=usuario)
+    return render(request, "usuarios/asignar_clientes.html", {"form": form, "usuario": usuario})
+

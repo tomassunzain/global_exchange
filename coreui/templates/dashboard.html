@@ -24,6 +24,22 @@
     </div>
   </div>
 
+  {% comment %} Tasa de cambio {% endcomment %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card text-bg-light mb-4">
+        <div class="card-header">
+          <strong>Tasa de Cambio</strong>
+        </div>
+        <div class="card-body">
+          <p><strong>USD/₲:</strong> {{ tasa_usd|default:"7.300" }}</p>
+          <p><strong>EUR/₲:</strong> {{ tasa_eur|default:"8.000" }}</p>
+          <small class="text-muted">Última actualización: {{ tasa_timestamp|default:"-" }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Estadísticas principales -->
   <div class="row mb-4">
     <div class="col-xl-3 col-md-6">
@@ -40,6 +56,22 @@
         </div>
       </div>
     </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card text-bg-danger mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">Total Clientes</h5>
+              <h3 class="mb-0">{{ total_clientes|default:0 }}</h3>
+              <small class="opacity-75">Registrados</small>
+            </div>
+            <i class="bi bi-building fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <div class="col-xl-3 col-md-6">
       <div class="card text-bg-success mb-4">
@@ -143,6 +175,17 @@
                 {% endif %}
               </p>
               <p><strong>Miembro desde:</strong> {{ request.user.date_joined|date:"d/m/Y" }}</p>
+              <p><strong>Cliente Activo:</strong></p>
+              <form method="post" action="{% url 'clientes:seleccionar_cliente' request.user.id %}">
+                {% csrf_token %}
+                <select name="cliente_id" class="form-select" onchange="this.form.submit()">
+                  {% for cliente in request.user.clientes.all %}
+                    <option value="{{ cliente.id }}" {% if cliente.id == request.session.cliente_activo %}selected{% endif %}>
+                      {{ cliente.nombre }} ({{ cliente.get_tipo_display }})
+                    </option>
+                  {% endfor %}
+                </select>
+              </form>
               <p><strong>Mis Roles:</strong></p>
               <div class="mb-3">
                 {% for role in request.user.get_roles %}

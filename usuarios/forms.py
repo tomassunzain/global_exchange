@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
+
+from clientes.models import Cliente
 from .models import Role, UserRole
 
 User = get_user_model()
@@ -159,3 +161,20 @@ class RoleForm(forms.ModelForm):
                 'placeholder': 'Descripción del rol'
             })
         }
+
+class AsignarClientesAUsuarioForm(forms.Form):
+    clientes = forms.ModelMultipleChoiceField(
+        queryset=Cliente.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.usuario = kwargs.pop("usuario")
+        super().__init__(*args, **kwargs)
+        self.fields["clientes"].initial = self.usuario.clientes.all()
+
+    def save(self):
+        self.usuario.clientes.set(self.cleaned_data["clientes"])
+        self.usuario.save()
+        return self.usuario

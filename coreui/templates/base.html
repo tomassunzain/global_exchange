@@ -95,6 +95,30 @@
             </li>
           </ul>
         </li>
+      
+        <!-- Gestión de Clientes -->
+      <li class="nav-group {% if 'clientes' in request.resolver_match.app_name %}show{% endif %}">
+        <a class="nav-link nav-group-toggle" href="#">
+          <i class="nav-icon bi bi-building"></i>
+          Clientes
+        </a>
+        <ul class="nav-group-items compact">
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'clientes_list' %}active{% endif %}"
+              href="{% url 'clientes:clientes_list' %}">
+              <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+              Lista de Clientes
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'cliente_create' %}active{% endif %}"
+              href="{% url 'clientes:cliente_create' %}">
+              <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+              Nuevo Cliente
+            </a>
+          </li>
+        </ul>
+      </li>
 
         <!-- Configuración -->
         <li class="nav-title">Sistema</li>
