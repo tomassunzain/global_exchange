@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if role %}Editar Rol - {{ role.name }}{% else %}Nuevo Rol{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'usuarios:dashboard' %}">Inicio</a>
+<a href="{% url 'usuarios:roles_list' %}" class="breadcrumb-item">Roles</a>
+<span class="breadcrumb-item active">
+  {% if role %}Editar Rol{% else %}Nuevo Rol{% endif %}
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <strong>
+            {% if role %}
+              <i class="bi bi-pencil"></i> Editar Rol: {{ role.name }}
+            {% else %}
+              <i class="bi bi-plus-lg"></i> Crear Nuevo Rol
+            {% endif %}
+          </strong>
+          <div class="card-header-actions">
+            <a href="{% url 'usuarios:roles_list' %}" class="btn btn-sm btn-secondary">
+              <i class="bi bi-arrow-left"></i> Volver
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="{{ form.name.id_for_label }}" class="form-label">
+                    <strong>Nombre del Rol *</strong>
+                  </label>
+                  {{ form.name }}
+                  {% if form.name.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.name.errors.0 }}
+                    </div>
+                  {% endif %}
+                  <div class="form-text">
+                    Nombre único para identificar el rol (ej: Admin, Editor, Viewer)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.description.id_for_label }}" class="form-label">
+                <strong>Descripción</strong>
+              </label>
+              {{ form.description }}
+              {% if form.description.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.description.errors.0 }}
+                </div>
+              {% endif %}
+              <div class="form-text">
+                Descripción detallada de los permisos y funciones de este rol
+              </div>
+            </div>
+
+            {% if role %}
+              <!-- Información adicional para roles existentes -->
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <div class="card border-info">
+                    <div class="card-body">
+                      <h6 class="card-title">
+                        <i class="bi bi-info-circle text-info"></i>
+                        Información del Rol
+                      </h6>
+                      <p class="card-text">
+                        <strong>Usuarios asignados:</strong> 
+                        <span class="badge bg-primary">{{ role.user_roles.count }}</span>
+                      </p>
+                      {% if role.user_roles.count > 0 %}
+                        <small class="text-muted">
+                          <strong>Usuarios:</strong>
+                          {% for user_role in role.user_roles.all|slice:":5" %}
+                            {{ user_role.user.email }}{% if not forloop.last %}, {% endif %}
+                          {% endfor %}
+                          {% if role.user_roles.count > 5 %}
+                            y {{ role.user_roles.count|add:"-5" }} más...
+                          {% endif %}
+                        </small>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                {% if role %}
+                  <i class="bi bi-check-lg"></i> Actualizar Rol
+                {% else %}
+                  <i class="bi bi-plus-lg"></i> Crear Rol
+                {% endif %}
+              </button>
+              <a href="{% url 'usuarios:roles_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validación en tiempo real del nombre del rol
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    if (nameInput) {
+        nameInput.addEventListener('input', function() {
+            // Convertir a formato título (primera letra mayúscula)
+            let value = this.value;
+            if (value.length > 0) {
+                this.value = value.charAt(0).toUpperCase() + value.slice(1);
+            }
+        });
+    }
+
+    // Auto-focus en el campo nombre
+    if (nameInput) {
+        nameInput.focus();
+    }
+});
+</script>
+{% endblock %}

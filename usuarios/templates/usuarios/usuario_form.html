@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if usuario %}Editar Usuario - {{ usuario.email }}{% else %}Nuevo Usuario{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'usuarios:dashboard' %}">Inicio</a>
+<a href="{% url 'usuarios:usuarios_list' %}" class="breadcrumb-item">Usuarios</a>
+<span class="breadcrumb-item active">
+  {% if usuario %}Editar Usuario{% else %}Nuevo Usuario{% endif %}
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <strong>
+            {% if usuario %}
+              <i class="bi bi-pencil"></i> Editar Usuario: {{ usuario.email }}
+            {% else %}
+              <i class="bi bi-person-plus"></i> Crear Nuevo Usuario
+            {% endif %}
+          </strong>
+          <div class="card-header-actions">
+            <a href="{% url 'usuarios:usuarios_list' %}" class="btn btn-sm btn-secondary">
+              <i class="bi bi-arrow-left"></i> Volver
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+              <div class="col-md-8">
+                <div class="mb-3">
+                  <label for="{{ form.email.id_for_label }}" class="form-label">
+                    <strong>Email *</strong>
+                  </label>
+                  {{ form.email }}
+                  {% if form.email.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.email.errors.0 }}
+                    </div>
+                  {% endif %}
+                  <div class="form-text">
+                    Dirección de correo electrónico única del usuario
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">
+                    <strong>Estado del Usuario</strong>
+                  </label>
+                  <div class="form-check form-switch">
+                    {{ form.is_active }}
+                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                      Usuario activo
+                    </label>
+                  </div>
+                  <div class="form-text">
+                    Solo usuarios activos pueden iniciar sesión
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campos de contraseña -->
+            {% if form.password1 %}
+              <!-- Formulario de CREAR usuario (UserCreateForm) -->
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.password1.id_for_label }}" class="form-label">
+                      <strong>Contraseña *</strong>
+                    </label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.password1.errors.0 }}
+                      </div>
+                    {% endif %}
+                    <div class="form-text">
+                      Mínimo 8 caracteres
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.password2.id_for_label }}" class="form-label">
+                      <strong>Confirmar Contraseña *</strong>
+                    </label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.password2.errors.0 }}
+                      </div>
+                    {% endif %}
+                    <div class="form-text">
+                      Repite la contraseña anterior
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% elif form.password %}
+              <!-- Formulario de EDITAR usuario (UserForm) -->
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                      <strong>Nueva Contraseña</strong>
+                    </label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.password.errors.0 }}
+                      </div>
+                    {% endif %}
+                    <div class="form-text">
+                      Dejar en blanco para mantener la contraseña actual
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Mostrar errores generales del formulario -->
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            {% if usuario %}
+              <!-- Información adicional para usuarios existentes -->
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <div class="card border-info">
+                    <div class="card-body">
+                      <h6 class="card-title">
+                        <i class="bi bi-info-circle text-info"></i>
+                        Información del Usuario
+                      </h6>
+                      <p class="card-text">
+                        <strong>ID:</strong> {{ usuario.id }}<br>
+                        <strong>Fecha de registro:</strong> {{ usuario.date_joined|date:"d/m/Y H:i" }}<br>
+                        <strong>Último acceso:</strong> {{ usuario.last_login|date:"d/m/Y H:i"|default:"Nunca" }}<br>
+                        <strong>Roles asignados:</strong>
+                        <span class="badge bg-primary">{{ usuario.get_roles|length }}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="card border-secondary">
+                    <div class="card-body">
+                      <h6 class="card-title">
+                        <i class="bi bi-shield-check text-secondary"></i>
+                        Roles Actuales
+                      </h6>
+                      {% if usuario.get_roles %}
+                        {% for role in usuario.get_roles %}
+                          <span class="badge bg-primary me-1 mb-1">{{ role }}</span>
+                        {% endfor %}
+                        <div class="mt-2">
+                          <a href="{% url 'usuarios:asignar_rol' usuario.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-gear"></i> Modificar Roles
+                          </a>
+                        </div>
+                      {% else %}
+                        <p class="text-muted">No tiene roles asignados</p>
+                        <a href="{% url 'usuarios:asignar_rol' usuario.id %}" class="btn btn-sm btn-primary">
+                          <i class="bi bi-plus"></i> Asignar Roles
+                        </a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                {% if usuario %}
+                  <i class="bi bi-check-lg"></i> Actualizar Usuario
+                {% else %}
+                  <i class="bi bi-person-plus"></i> Crear Usuario
+                {% endif %}
+              </button>
+              <a href="{% url 'usuarios:usuarios_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus en el campo email
+    const emailInput = document.getElementById('{{ form.email.id_for_label }}');
+    if (emailInput) {
+        emailInput.focus();
+    }
+
+    // Validación en tiempo real del email
+    if (emailInput) {
+        emailInput.addEventListener('input', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const isValid = emailRegex.test(this.value);
+
+            if (this.value.length > 0) {
+                if (isValid) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            } else {
+                this.classList.remove('is-valid', 'is-invalid');
+            }
+        });
+    }
+
+    // Validación de confirmación de contraseña (para crear usuarios)
+    {% if form.password1 %}
+    const password1 = document.getElementById('{{ form.password1.id_for_label }}');
+    const password2 = document.getElementById('{{ form.password2.id_for_label }}');
+
+    if (password1 && password2) {
+        function validatePasswords() {
+            if (password1.value && password2.value) {
+                if (password1.value === password2.value) {
+                    password2.classList.remove('is-invalid');
+                    password2.classList.add('is-valid');
+                } else {
+                    password2.classList.remove('is-valid');
+                    password2.classList.add('is-invalid');
+                }
+            } else {
+                password2.classList.remove('is-valid', 'is-invalid');
+            }
+        }
+
+        password1.addEventListener('input', validatePasswords);
+        password2.addEventListener('input', validatePasswords);
+
+        // Agregar toggles para contraseñas en crear usuario
+        addPasswordToggle(password1);
+        addPasswordToggle(password2);
+    }
+    {% endif %}
+
+    // Mostrar/ocultar contraseña (para editar usuarios)
+    {% if form.password %}
+    const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
+    if (passwordInput) {
+        addPasswordToggle(passwordInput);
+    }
+    {% endif %}
+
+    function addPasswordToggle(input) {
+        // Crear botón para mostrar/ocultar contraseña
+        const toggleButton = document.createElement('button');
+        toggleButton.type = 'button';
+        toggleButton.className = 'btn btn-outline-secondary';
+        toggleButton.innerHTML = '<i class="bi bi-eye"></i>';
+
+        // Crear grupo de input
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+
+        // Reorganizar elementos
+        input.parentNode.insertBefore(inputGroup, input);
+        inputGroup.appendChild(input);
+        inputGroup.appendChild(toggleButton);
+
+        // Funcionalidad del botón
+        toggleButton.addEventListener('click', function() {
+            if (input.type === 'password') {
+                input.type = 'text';
+                this.innerHTML = '<i class="bi bi-eye-slash"></i>';
+            } else {
+                input.type = 'password';
+                this.innerHTML = '<i class="bi bi-eye"></i>';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

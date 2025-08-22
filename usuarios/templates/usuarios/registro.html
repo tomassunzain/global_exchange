@@ -1,7 +1,41 @@
-<h1>Registro</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Crear cuenta</button>
-</form>
-<p>¿Ya tenés cuenta? <a href="{% url 'usuarios:login' %}">Iniciar sesión</a></p>
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container d-flex align-items-center min-vh-100">
+  <div class="row w-100 justify-content-center">
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow-lg">
+        <div class="card-body p-4">
+          <h1 class="h4 mb-3 text-center">Registro</h1>
+          <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+
+            <div class="mb-3">
+              <label for="id_email" class="form-label">Email</label>
+              {% render_field form.email class="form-control" placeholder="ejemplo@correo.com" %}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_password1" class="form-label">Contraseña</label>
+              {% render_field form.password1 class="form-control" placeholder="********" %}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_password2" class="form-label">Confirmar Contraseña</label>
+              {% render_field form.password2 class="form-control" placeholder="********" %}
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">Crear cuenta</button>
+          </form>
+
+          <p class="mt-3 text-center">
+            ¿Ya tenés cuenta? <a href="{% url 'usuarios:login' %}">Ingresá</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Global Exchange{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Bienvenida -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h2 class="mb-1">¡Bienvenido, {{ request.user.email }}!</h2>
+              <p class="mb-0 opacity-75">Sistema de Gestión Global Exchange</p>
+            </div>
+            <div class="text-end">
+              <i class="bi bi-house-door fs-1 opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% comment %} Tasa de cambio {% endcomment %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card text-bg-light mb-4">
+        <div class="card-header">
+          <strong>Tasa de Cambio</strong>
+        </div>
+        <div class="card-body">
+          <p><strong>USD/₲:</strong> {{ tasa_usd|default:"7.300" }}</p>
+          <p><strong>EUR/₲:</strong> {{ tasa_eur|default:"8.000" }}</p>
+          <small class="text-muted">Última actualización: {{ tasa_timestamp|default:"-" }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas principales -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+      <div class="card text-bg-info mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">Total Usuarios</h5>
+              <h3 class="mb-0" id="total-usuarios">{{ total_usuarios|default:0 }}</h3>
+              <small class="opacity-75">En el sistema</small>
+            </div>
+            <i class="bi bi-people fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card text-bg-danger mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">Total Clientes</h5>
+              <h3 class="mb-0">{{ total_clientes|default:0 }}</h3>
+              <small class="opacity-75">Registrados</small>
+            </div>
+            <i class="bi bi-building fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card text-bg-success mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">Usuarios Activos</h5>
+              <h3 class="mb-0" id="usuarios-activos">{{ usuarios_activos|default:0 }}</h3>
+              <small class="opacity-75">Verificados</small>
+            </div>
+            <i class="bi bi-check-circle fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card text-bg-warning mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">Total Roles</h5>
+              <h3 class="mb-0" id="total-roles">{{ total_roles|default:0 }}</h3>
+              <small class="opacity-75">Configurados</small>
+            </div>
+            <i class="bi bi-shield-check fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card text-bg-secondary mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">Mis Roles</h5>
+              <h3 class="mb-0">{{ request.user.get_roles|length }}</h3>
+              <small class="opacity-75">Asignados</small>
+            </div>
+            <i class="bi bi-person-badge fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones rápidas -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <strong>Acciones Rápidas</strong>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <a href="{% url 'usuarios:usuarios_list' %}" class="btn btn-outline-primary w-100">
+                <i class="bi bi-people d-block fs-3 mb-2"></i>
+                Ver Usuarios
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="{% url 'usuarios:roles_list' %}" class="btn btn-outline-info w-100">
+                <i class="bi bi-shield-check d-block fs-3 mb-2"></i>
+                Ver Roles
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="{% url 'usuarios:registro' %}" class="btn btn-outline-success w-100">
+                <i class="bi bi-person-plus d-block fs-3 mb-2"></i>
+                Nuevo Usuario
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="{% url 'usuarios:rol_create' %}" class="btn btn-outline-warning w-100">
+                <i class="bi bi-plus-square d-block fs-3 mb-2"></i>
+                Nuevo Rol
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información del usuario actual -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <strong>Mi Información</strong>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12">
+              <p><strong>Email:</strong> {{ request.user.email }}</p>
+              <p><strong>Estado:</strong>
+                {% if request.user.is_active %}
+                  <span class="badge bg-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-danger">Inactivo</span>
+                {% endif %}
+              </p>
+              <p><strong>Miembro desde:</strong> {{ request.user.date_joined|date:"d/m/Y" }}</p>
+              <p><strong>Cliente Activo:</strong></p>
+              <form method="post" action="{% url 'clientes:seleccionar_cliente' request.user.id %}">
+                {% csrf_token %}
+                <select name="cliente_id" class="form-select" onchange="this.form.submit()">
+                  {% for cliente in request.user.clientes.all %}
+                    <option value="{{ cliente.id }}" {% if cliente.id == request.session.cliente_activo %}selected{% endif %}>
+                      {{ cliente.nombre }} ({{ cliente.get_tipo_display }})
+                    </option>
+                  {% endfor %}
+                </select>
+              </form>
+              <p><strong>Mis Roles:</strong></p>
+              <div class="mb-3">
+                {% for role in request.user.get_roles %}
+                  <span class="badge bg-primary me-1">{{ role }}</span>
+                {% empty %}
+                  <span class="text-muted">No tienes roles asignados</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actividad reciente -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <strong>Actividad Reciente</strong>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-marker bg-success"></div>
+              <div class="timeline-content">
+                <h6 class="timeline-title">Sesión iniciada</h6>
+                <p class="timeline-text">Has iniciado sesión exitosamente</p>
+                <small class="text-muted">Hace unos momentos</small>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-marker bg-info"></div>
+              <div class="timeline-content">
+                <h6 class="timeline-title">Sistema disponible</h6>
+                <p class="timeline-text">Todas las funcionalidades están operativas</p>
+                <small class="text-muted">Hoy</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2rem;
+  top: 0.5rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 0 0 3px #dee2e6;
+}
+
+.timeline-content {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-left: 3px solid #dee2e6;
+}
+
+.timeline-title {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.timeline-text {
+  margin-bottom: 0.5rem;
+  color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animación para las tarjetas de estadísticas
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Actualizar la hora actual cada segundo
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        const dateString = now.toLocaleDateString();
+
+        // Si existe un elemento para mostrar la hora
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+            timeElement.textContent = `${dateString} ${timeString}`;
+        }
+    }
+
+    // Actualizar cada segundo
+    setInterval(updateTime, 1000);
+    updateTime(); // Llamar inmediatamente
+
+    // Efecto hover para las tarjetas de acciones rápidas
+    const quickActionCards = document.querySelectorAll('.btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-warning');
+    quickActionCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+{% endblock %}
