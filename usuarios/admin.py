@@ -1,3 +1,7 @@
-from django.contrib import admin
+"""
+Módulo de administración de Django para la aplicación de usuarios.
 
-# Register your models here.
+Este módulo permite registrar y personalizar los modelos en el panel de administración de Django.
+"""
+
+from django.contrib import admin

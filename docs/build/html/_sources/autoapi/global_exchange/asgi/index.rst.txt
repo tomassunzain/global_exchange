@@ -1,0 +1,30 @@
+global_exchange.asgi
+====================
+
+.. py:module:: global_exchange.asgi
+
+.. autoapi-nested-parse::
+
+   Configuración ASGI para el proyecto global_exchange.
+
+   Este archivo expone la variable ``application`` para el despliegue en servidores compatibles con ASGI.
+
+   .. module:: asgi
+      :platform: Unix, Windows
+      :synopsis: Configuración ASGI para global_exchange
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   global_exchange.asgi.application
+
+
+Module Contents
+---------------
+
+.. py:data:: application
+

@@ -1,0 +1,45 @@
+usuarios.apps
+=============
+
+.. py:module:: usuarios.apps
+
+.. autoapi-nested-parse::
+
+   Configuración principal de la aplicación usuarios.
+
+   Define la configuración y el nombre de la app para Django.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   usuarios.apps.UsuariosConfig
+
+
+Module Contents
+---------------
+
+.. py:class:: UsuariosConfig(app_name, app_module)
+
+   Bases: :py:obj:`django.apps.AppConfig`
+
+
+   Configuración de la clase de la aplicación usuarios.
+
+   :ivar default_auto_field: Tipo de campo automático por defecto.
+   :ivar name: Nombre de la aplicación.
+
+
+   .. py:attribute:: default_auto_field
+      :value: 'django.db.models.BigAutoField'
+
+
+
+   .. py:attribute:: name
+      :value: 'usuarios'
+
+
+

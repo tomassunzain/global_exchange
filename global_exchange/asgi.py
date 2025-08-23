@@ -1,10 +1,11 @@
 """
-ASGI config for global_exchange project.
+Configuración ASGI para el proyecto global_exchange.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
+Este archivo expone la variable ``application`` para el despliegue en servidores compatibles con ASGI.
 
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
+.. module:: asgi
+   :platform: Unix, Windows
+   :synopsis: Configuración ASGI para global_exchange
 """
 
 import os

@@ -1,10 +1,11 @@
 """
-WSGI config for global_exchange project.
+Configuración WSGI para el proyecto global_exchange.
 
-It exposes the WSGI callable as a module-level variable named ``application``.
+Este archivo expone la variable ``application`` para el despliegue en servidores compatibles con WSGI.
 
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
+.. module:: wsgi
+   :platform: Unix, Windows
+   :synopsis: Configuración WSGI para global_exchange
 """
 
 import os

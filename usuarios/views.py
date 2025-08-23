@@ -1,3 +1,9 @@
+"""
+Vistas y lógica de negocio para la aplicación de usuarios.
+
+Incluye vistas para registro, login, verificación de cuenta y gestión de sesiones y roles.
+"""
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, get_user_model
@@ -15,6 +21,11 @@ User = get_user_model()
 
 
 def _enviar_verificacion(user):
+    """
+    Envía un correo de verificación al usuario.
+
+    :param user: Instancia de usuario a verificar.
+    """
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     url = f"{settings.SITE_URL}/usuarios/verificar/{uid}/{token}/"
@@ -29,6 +40,12 @@ def _enviar_verificacion(user):
 
 
 def registro(request):
+    """
+    Vista para el registro de nuevos usuarios.
+
+    :param request: HttpRequest.
+    :return: HttpResponse con el formulario de registro o redirección.
+    """
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
@@ -45,6 +62,14 @@ def registro(request):
 
 
 def verificar_email(request, uidb64, token):
+    """
+    Vista para verificar la cuenta de usuario mediante enlace enviado por email.
+
+    :param request: HttpRequest.
+    :param uidb64: ID de usuario codificado.
+    :param token: Token de verificación.
+    :return: HttpResponse con mensaje de éxito o error.
+    """
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
@@ -63,6 +88,12 @@ def verificar_email(request, uidb64, token):
 
 
 def login_view(request):
+    """
+    Vista para el inicio de sesión de usuarios.
+
+    :param request: HttpRequest.
+    :return: HttpResponse con el formulario de login o redirección.
+    """
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -77,7 +108,14 @@ def login_view(request):
         form = LoginForm()
     return render(request, 'usuarios/login.html', {'form': form})
 
+
 def logout_view(request):
+    """
+    Vista para cerrar la sesión del usuario.
+
+    :param request: HttpRequest.
+    :return: Redirección a la página de login.
+    """
     logout(request)
     return redirect('usuarios:login')
 
@@ -85,6 +123,12 @@ def logout_view(request):
 @login_required
 @permission_required('auth.view_group', raise_exception=True)
 def roles_list(request):
+    """
+    Vista para listar los roles (grupos) existentes.
+
+    :param request: HttpRequest.
+    :return: HttpResponse con la lista de roles.
+    """
     grupos = Group.objects.all().prefetch_related('permissions')
     return render(request, 'usuarios/roles_list.html', {'grupos': grupos})
 
@@ -92,6 +136,13 @@ def roles_list(request):
 @login_required
 @permission_required('auth.change_group', raise_exception=True)
 def rol_editar(request, group_id):
+    """
+    Vista para editar los permisos de un rol (grupo).
+
+    :param request: HttpRequest.
+    :param group_id: ID del grupo a editar.
+    :return: HttpResponse con el formulario de edición o redirección.
+    """
     grupo = get_object_or_404(Group, pk=group_id)
     permisos = Permission.objects.select_related('content_type').all()
 
@@ -107,6 +158,13 @@ def rol_editar(request, group_id):
 @login_required
 @permission_required('usuarios.change_user', raise_exception=True)
 def asignar_rol_a_usuario(request, user_id):
+    """
+    Vista para asignar roles (grupos) a un usuario.
+
+    :param request: HttpRequest.
+    :param user_id: ID del usuario.
+    :return: HttpResponse con el formulario de asignación o redirección.
+    """
     usuario = get_object_or_404(User, pk=user_id)
     grupos = Group.objects.all()
     if request.method == 'POST':
@@ -115,4 +173,3 @@ def asignar_rol_a_usuario(request, user_id):
         messages.success(request, "Roles asignados.")
         return redirect('usuarios:usuarios_list')
     return render(request, 'usuarios/asignar_rol.html', {'usuario': usuario, 'grupos': grupos})
-

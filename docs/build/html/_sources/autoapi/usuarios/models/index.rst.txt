@@ -1,0 +1,121 @@
+usuarios.models
+===============
+
+.. py:module:: usuarios.models
+
+.. autoapi-nested-parse::
+
+   Modelos y gestores personalizados para la aplicación de usuarios.
+
+   Define el modelo de usuario y el gestor de usuarios basado en email.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   usuarios.models.UserManager
+   usuarios.models.User
+
+
+Module Contents
+---------------
+
+.. py:class:: UserManager
+
+   Bases: :py:obj:`django.contrib.auth.models.BaseUserManager`
+
+
+   Gestor de usuarios personalizado.
+
+   Permite crear usuarios usando el email como identificador principal.
+
+
+   .. py:attribute:: use_in_migrations
+      :value: True
+
+
+
+   .. py:method:: _create_user(email, password, **extra_fields)
+
+      Crea un usuario con email y contraseña.
+
+      :param email: Correo electrónico único.
+      :param password: Contraseña en texto plano.
+      :param extra_fields: Campos adicionales para el usuario.
+      :return: Instancia de usuario creada.
+      :raises ValueError: Si no se proporciona email.
+
+
+
+   .. py:method:: create_user(email, password=None, **extra_fields)
+
+      Crea un usuario estándar (no staff, no superuser).
+
+      :param email: Correo electrónico único.
+      :param password: Contraseña en texto plano.
+      :param extra_fields: Campos adicionales para el usuario.
+      :return: Instancia de usuario creada.
+
+
+
+   .. py:method:: create_superuser(*args, **kwargs)
+      :abstractmethod:
+
+
+      Bloquea la creación de superusuarios.
+
+      :raises NotImplementedError: Siempre lanza excepción.
+
+
+
+.. py:class:: User(*args, **kwargs)
+
+   Bases: :py:obj:`django.contrib.auth.models.AbstractUser`
+
+
+   Modelo de usuario personalizado basado en email.
+
+   El campo 'username' se elimina y se usa 'email' como identificador principal.
+
+
+   .. py:attribute:: username
+      :value: None
+
+
+
+   .. py:attribute:: email
+
+
+   .. py:attribute:: USERNAME_FIELD
+      :value: 'email'
+
+
+
+   .. py:attribute:: REQUIRED_FIELDS
+      :value: []
+
+
+
+   .. py:attribute:: objects
+
+
+   .. py:method:: save(*args, **kwargs)
+
+      Guarda el usuario forzando siempre `is_superuser=False`.
+
+      :param args: Argumentos posicionales.
+      :param kwargs: Argumentos de palabra clave.
+
+
+
+   .. py:method:: __str__()
+
+      Representación legible del usuario.
+
+      :return: Email del usuario.
+
+
+

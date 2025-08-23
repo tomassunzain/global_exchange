@@ -1,0 +1,89 @@
+usuarios.forms
+==============
+
+.. py:module:: usuarios.forms
+
+.. autoapi-nested-parse::
+
+   Formularios para la gestión de usuarios.
+
+   Incluye formularios para registro y autenticación de usuarios.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   usuarios.forms.User
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   usuarios.forms.RegistroForm
+   usuarios.forms.LoginForm
+
+
+Module Contents
+---------------
+
+.. py:data:: User
+
+.. py:class:: RegistroForm(data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList, label_suffix=None, empty_permitted=False, field_order=None, use_required_attribute=None, renderer=None, bound_field_class=None)
+
+   Bases: :py:obj:`django.forms.Form`
+
+
+   Formulario para el registro de nuevos usuarios.
+
+   Campos:
+       email (EmailField): Correo electrónico del usuario.
+       password1 (CharField): Contraseña.
+       password2 (CharField): Confirmación de contraseña.
+
+
+   .. py:attribute:: email
+
+
+   .. py:attribute:: password1
+
+
+   .. py:attribute:: password2
+
+
+   .. py:method:: clean_email()
+
+      Valida que el correo electrónico no esté registrado previamente.
+
+      :return: Correo electrónico validado.
+      :raises ValidationError: Si el correo ya existe.
+
+
+
+   .. py:method:: clean()
+
+      Valida que las contraseñas coincidan.
+
+      :return: Datos limpios del formulario.
+      :raises ValidationError: Si las contraseñas no coinciden.
+
+
+
+.. py:class:: LoginForm(request=None, *args, **kwargs)
+
+   Bases: :py:obj:`django.contrib.auth.forms.AuthenticationForm`
+
+
+   Formulario para el inicio de sesión de usuarios.
+
+   Campos:
+       username (EmailField): Correo electrónico del usuario.
+
+
+   .. py:attribute:: username
+
+
