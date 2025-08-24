@@ -1,5 +1,3 @@
-# --- Core Django runtime ---
-Django==5.2.5
 asgiref==3.9.1
 sqlparse==0.5.3
 psycopg2-binary==2.9.10
@@ -15,16 +13,9 @@ django-widget-tweaks==1.5.0
 django-browser-reload==1.18.0
 
 # --- Sphinx documentation stack ---
-alabaster==1.0.0
-babel==2.17.0
-docutils==0.21.2
-imagesize==1.4.1
-Jinja2==3.1.6
-MarkupSafe==3.0.2
-Pygments==2.19.2
-snowballstemmer==3.0.1
+Sphinx==8.2.3
+sphinx-autoapi==3.6.0
+sphinx-rtd-theme==3.0.2
 myst-parser==4.0.1
-markdown-it-py==3.0.0
-mdit-py-plugins==0.5.0
-mdurl==0.1.2
-rich==14.1.0
+sphinxcontrib-mermaid==1.0.0
+linkify-it-py==2.0.3

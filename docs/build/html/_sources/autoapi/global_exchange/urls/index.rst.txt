@@ -1,0 +1,35 @@
+global_exchange.urls
+====================
+
+.. py:module:: global_exchange.urls
+
+.. autoapi-nested-parse::
+
+   .. module:: global_exchange.urls
+      :no-index:
+
+   Módulo global_exchange.urls
+
+   Configuración de URLs para el proyecto global_exchange.
+
+   Incluye rutas para:
+   - Panel de administración
+   - Aplicación de usuarios
+   - Redirección a login
+   - Documentación generada por Sphinx
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   global_exchange.urls.urlpatterns
+
+
+Module Contents
+---------------
+
+.. py:data:: urlpatterns
+

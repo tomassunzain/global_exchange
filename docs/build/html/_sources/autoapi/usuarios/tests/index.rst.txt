@@ -1,0 +1,32 @@
+usuarios.tests
+==============
+
+.. py:module:: usuarios.tests
+
+.. autoapi-nested-parse::
+
+   Pruebas automatizadas para la aplicación de usuarios.
+
+   Incluye casos de prueba para los modelos, vistas y formularios de la app usuarios.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   usuarios.tests.PruebasUsuarios
+
+
+Module Contents
+---------------
+
+.. py:class:: PruebasUsuarios(methodName='runTest')
+
+   Bases: :py:obj:`django.test.TestCase`
+
+
+   Clase base para pruebas de la aplicación usuarios.
+
+

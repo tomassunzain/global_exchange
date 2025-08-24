@@ -1,3 +1,9 @@
+"""
+Vistas y lógica de negocio para la aplicación de usuarios.
+
+Incluye vistas para registro, login, verificación de cuenta y gestión de sesiones y roles.
+"""
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, get_user_model
@@ -139,7 +145,7 @@ def usuario_delete(request, user_id):
     return render(request, "usuarios/usuario_delete_confirm.html", {"usuario": usuario})
 
 
-def enviar_verificacion(user):
+def _enviar_verificacion(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     url = f"{settings.SITE_URL}/usuarios/verificar/{uid}/{token}/"
@@ -161,7 +167,7 @@ def registro(request):
             user = User.objects.create_user(email=email, password=form.cleaned_data['password1'])
             user.is_active = False  # inactivo hasta verificar
             user.save()
-            enviar_verificacion(user)
+            _enviar_verificacion(user)
             messages.success(request, "Registro exitoso. Revisa tu correo para activar la cuenta.")
             return redirect('usuarios:login')
     else:
@@ -202,8 +208,13 @@ def login_view(request):
         form = LoginForm()
     return render(request, 'usuarios/login.html', {'form': form})
 
-
 def logout_view(request):
+    """
+    Vista para cerrar la sesión del usuario.
+
+    :param request: HttpRequest.
+    :return: Redirección a la página de login.
+    """
     logout(request)
     return redirect('usuarios:login')
 
@@ -211,6 +222,12 @@ def logout_view(request):
 @login_required
 @role_required("Admin")
 def roles_list(request):
+    """
+    Vista para listar los roles (grupos) existentes.
+
+    :param request: HttpRequest.
+    :return: HttpResponse con la lista de roles.
+    """
     roles = Role.objects.all()
     return render(request, "usuarios/roles_list.html", {"roles": roles})
 
@@ -232,6 +249,13 @@ def rol_create(request):
 @login_required
 @role_required("Admin")
 def rol_edit(request, role_id):
+    """
+   Vista para editar los permisos de un rol (grupo).
+
+   :param request: HttpRequest.
+   :param group_id: ID del grupo a editar.
+   :return: HttpResponse con el formulario de edición o redirección.
+   """
     role = get_object_or_404(Role, pk=role_id)
     if request.method == "POST":
         form = RoleForm(request.POST, instance=role)
@@ -278,6 +302,13 @@ def rol_delete(request, role_id):
 @login_required
 @role_required("Admin")
 def asignar_rol_a_usuario(request, user_id):
+    """
+    Vista para asignar roles (grupos) a un usuario.
+
+    :param request: HttpRequest.
+    :param user_id: ID del usuario.
+    :return: HttpResponse con el formulario de asignación o redirección.
+    """
     usuario = get_object_or_404(User, pk=user_id)
 
     if request.method == "POST":

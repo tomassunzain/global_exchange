@@ -1,3 +1,9 @@
+"""
+Configuración de rutas para la aplicación de usuarios.
+
+Define las URLs para registro, login, verificación de email, gestión de roles y sesiones.
+"""
+
 from django.urls import path
 from . import views
 
@@ -30,3 +36,4 @@ urlpatterns = [
     path('roles/<int:role_id>/editar/', views.rol_edit, name='rol_edit'),
     path('roles/<int:role_id>/eliminar/', views.rol_delete, name='rol_delete'),
 ]
+
