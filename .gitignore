@@ -16,3 +16,6 @@ Thumbs.db
 # Archivos de IDE
 .vscode/
 .idea/
+
+# Build de Sphinx
+docs/build/
