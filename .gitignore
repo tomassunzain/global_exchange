@@ -6,6 +6,7 @@ __pycache__/
 
 # Entornos virtuales
 venv/
+.venv
 .env/
 
 # Archivos de sistema

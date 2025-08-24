@@ -4,9 +4,9 @@ Modelos y gestores personalizados para la aplicación de usuarios.
 Define el modelo de usuario y el gestor de usuarios basado en email.
 """
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-
 
 class UserManager(BaseUserManager):
     """
@@ -55,8 +55,7 @@ class UserManager(BaseUserManager):
 
         :raises NotImplementedError: Siempre lanza excepción.
         """
-        raise NotImplementedError("No está permitido crear superusuarios en este sistema.")
-
+        raise NotImplementedError("No esta permitido crear superusuarios en este sistema.")
 
 class User(AbstractUser):
     """
@@ -90,3 +89,38 @@ class User(AbstractUser):
         :return: Email del usuario.
         """
         return self.email
+
+    def has_role(self, role_name: str) -> bool:
+        return self.user_roles.filter(role__name=role_name).exists()
+
+    def has_any_role(self, *role_names) -> bool:
+        return self.user_roles.filter(role__name__in=role_names).exists()
+
+    def get_roles(self) -> list[str]:
+        # Corregido: era user_role, debe ser user_roles
+        return list(self.user_roles.values_list("role__name", flat=True))
+
+class Role(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Rol"
+        verbose_name_plural = "Roles"
+
+
+class UserRole(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_roles")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="user_roles")
+    assigned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "role")
+        verbose_name = "Rol de Usuario"
+        verbose_name_plural = "Roles de Usuario"
+
+    def __str__(self):
+        return f"{self.user.email} → {self.role.name}"

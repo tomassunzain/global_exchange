@@ -1,8 +1,5 @@
 """
-.. module:: global_exchange.urls
-   :no-index:
-
-Módulo global_exchange.urls
+URL configuration for global_exchange project.
 
 Configuración de URLs para el proyecto global_exchange.
 
@@ -22,9 +19,11 @@ from django.views.generic import RedirectView
 import os
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("usuarios/", include(("usuarios.urls", "usuarios"), namespace="usuarios")),
-    path("", lambda r: redirect("usuarios:login"), name="home"),
+    path('admin/', admin.site.urls),
+    path('usuarios/', include('usuarios.urls', namespace='usuarios')),
+    path('', lambda r: redirect('usuarios:login'), name='login'),
+    path('dashboard/', lambda r: redirect('usuarios:dashboard'), name='dashboard'),
+    path('clientes/', include('clientes.urls', namespace='clientes')),
     path("docs/", RedirectView.as_view(url="/docs/index.html", permanent=False)),
     re_path(
         r"^docs/(?P<path>.*)$",

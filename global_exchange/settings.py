@@ -34,7 +34,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'widget_tweaks',
     'usuarios',
+    'clientes',
 ]
 
 AUTH_USER_MODEL = 'usuarios.User'
@@ -58,7 +60,7 @@ ROOT_URLCONF = 'global_exchange.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
+        'DIRS': [BASE_DIR / "coreui" / 'templates']
         ,
         'APP_DIRS': True,
         'OPTIONS': {
@@ -79,7 +81,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'db_globalex',
         'USER': 'postgres',
-        'PASSWORD': 'masterkey',
+        'PASSWORD': 'postgres',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -112,6 +114,9 @@ USE_TZ = True
 
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "coreui" / "static",
+]
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

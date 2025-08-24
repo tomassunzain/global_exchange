@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Eliminar Rol - {{ role.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'usuarios:dashboard' %}">Inicio</a>
+<a href="{% url 'usuarios:roles_list' %}" class="breadcrumb-item">Roles</a>
+<span class="breadcrumb-item active">Eliminar Rol</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <strong>
+            <i class="bi bi-exclamation-triangle"></i>
+            Confirmar Eliminación
+          </strong>
+          <div class="card-header-actions">
+            <a href="{% url 'usuarios:roles_list' %}" class="btn btn-sm btn-outline-light">
+              <i class="bi bi-arrow-left"></i> Volver
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+          </div>
+
+          <h5>¿Está seguro que desea eliminar el rol "{{ role.name }}"?</h5>
+          
+          <div class="row mt-4">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title">Información del Rol</h6>
+                  <p class="card-text">
+                    <strong>Nombre:</strong> {{ role.name }}<br>
+                    <strong>Descripción:</strong> {{ role.description|default:"Sin descripción" }}<br>
+                    <strong>Usuarios asignados:</strong> 
+                    <span class="badge {% if role.user_roles.count > 0 %}bg-warning{% else %}bg-secondary{% endif %}">
+                      {{ role.user_roles.count }}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {% if role.user_roles.count > 0 %}
+              <div class="col-md-6">
+                <div class="card border-warning">
+                  <div class="card-body">
+                    <h6 class="card-title text-warning">
+                      <i class="bi bi-exclamation-circle"></i>
+                      Usuarios Afectados
+                    </h6>
+                    <p class="card-text">
+                      Los siguientes usuarios perderán este rol:
+                    </p>
+                    <ul class="list-unstyled">
+                      {% for user_role in role.user_roles.all %}
+                        <li>
+                          <i class="bi bi-person"></i>
+                          {{ user_role.user.email }}
+                          <small class="text-muted">(desde {{ user_role.assigned_at|date:"d/m/Y" }})</small>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="mt-4 d-flex gap-2">
+            <form method="post" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i>
+                Sí, Eliminar Rol
+              </button>
+            </form>
+            <a href="{% url 'usuarios:roles_list' %}" class="btn btn-secondary">
+              <i class="bi bi-x-lg"></i>
+              Cancelar
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmación adicional para roles con usuarios asignados
+    const deleteForm = document.querySelector('form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const usuariosAsignados = {{ role.user_roles.count }};
+            if (usuariosAsignados > 0) {
+                const confirmMessage = `¿Está absolutamente seguro?\n\nEsto eliminará el rol "${role.name}" de ${usuariosAsignados} usuario(s).`;
+                if (!confirm(confirmMessage)) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
