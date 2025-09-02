@@ -6,11 +6,25 @@ from .forms import AsignarUsuariosAClienteForm, ClienteForm
 
 @login_required
 def clientes_list(request):
+    """
+    Vista que muestra la lista de clientes registrados.
+    Args:
+        request: HttpRequest
+    Returns:
+        HttpResponse con la lista de clientes.
+    """
     clientes = Cliente.objects.all().order_by("-id")
     return render(request, "clientes/clientes_list.html", {"clientes": clientes})
 
 @login_required
 def cliente_create(request):
+    """
+    Vista para crear un nuevo cliente.
+    Args:
+        request: HttpRequest
+    Returns:
+        HttpResponse con el formulario o redirección.
+    """
     if request.method == "POST":
         form = ClienteForm(request.POST)
         if form.is_valid():
@@ -23,6 +37,14 @@ def cliente_create(request):
 
 @login_required
 def cliente_edit(request, cliente_id):
+    """
+    Vista para editar un cliente existente.
+    Args:
+        request: HttpRequest
+        cliente_id: ID del cliente a editar.
+    Returns:
+        HttpResponse con el formulario de edición o redirección.
+    """
     cliente = get_object_or_404(Cliente, pk=cliente_id)
     if request.method == "POST":
         form = ClienteForm(request.POST, instance=cliente)
@@ -36,6 +58,14 @@ def cliente_edit(request, cliente_id):
 
 @login_required
 def cliente_delete(request, cliente_id):
+    """
+    Vista para eliminar un cliente.
+    Args:
+        request: HttpRequest
+        cliente_id: ID del cliente a eliminar.
+    Returns:
+        HttpResponse con la confirmación de eliminación.
+    """
     cliente = get_object_or_404(Cliente, pk=cliente_id)
     if request.method == "POST":
         cliente.delete()
@@ -45,6 +75,14 @@ def cliente_delete(request, cliente_id):
 
 @login_required
 def seleccionar_cliente(request, cliente_id):
+    """
+    Vista para seleccionar un cliente activo.
+    Args:
+        request: HttpRequest
+        cliente_id: ID del cliente a seleccionar.
+    Returns:
+        HttpResponse redirigiendo al dashboard.
+    """
     cliente = get_object_or_404(Cliente, pk=cliente_id, usuarios=request.user)
     request.session["cliente_activo"] = cliente.id
     messages.success(request, f"Ahora estás operando como cliente: {cliente.nombre}")
@@ -52,6 +90,14 @@ def seleccionar_cliente(request, cliente_id):
 
 @login_required
 def asignar_usuarios_a_cliente(request, cliente_id):
+    """
+    Vista para asignar usuarios a un cliente.
+    Args:
+        request: HttpRequest
+        cliente_id: ID del cliente al que se asignarán usuarios.
+    Returns:
+        HttpResponse con el formulario o redirección.
+    """
     cliente= get_object_or_404(Cliente, pk=cliente_id)
     if request.method == "POST":
         form = AsignarUsuariosAClienteForm(request.POST, instance=cliente)

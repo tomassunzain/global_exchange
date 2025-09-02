@@ -101,10 +101,16 @@ class User(AbstractUser):
         return list(self.user_roles.values_list("role__name", flat=True))
 
 class Role(models.Model):
+    """
+    Modelo que representa un rol en el sistema.
+    """
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True)
 
     def __str__(self):
+        """
+        Retorna el nombre del rol.
+        """
         return self.name
 
     class Meta:
@@ -113,6 +119,9 @@ class Role(models.Model):
 
 
 class UserRole(models.Model):
+    """
+    Modelo que representa la relación entre usuario y rol.
+    """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_roles")
     role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="user_roles")
     assigned_at = models.DateTimeField(auto_now_add=True)
@@ -123,4 +132,7 @@ class UserRole(models.Model):
         verbose_name_plural = "Roles de Usuario"
 
     def __str__(self):
+        """
+        Retorna la relación usuario → rol en formato legible.
+        """
         return f"{self.user.email} → {self.role.name}"
