@@ -23,22 +23,21 @@ User = get_user_model()
 
 
 def dashboard_view(request):
-    # Estadísticas para el dashboard
-    context = {}
+    """
+    Vista principal del dashboard.
 
+    Muestra estadísticas generales de usuarios, roles y clientes.
+
+    :param request: HttpRequest
+    :return: HttpResponse con el dashboard
+    """
+    context = {}
     if request.user.is_authenticated:
         from django.db.models import Count
-
-        # Contar usuarios
         total_usuarios = User.objects.count()
         usuarios_activos = User.objects.filter(is_active=True).count()
-
-        # Contar roles
         total_roles = Role.objects.count()
-
-        # Contar clientes
         total_clientes = Cliente.objects.count()
-
         context.update({
             'total_usuarios': total_usuarios,
             'total_clientes' : total_clientes,
@@ -48,14 +47,19 @@ def dashboard_view(request):
             'tasa_eur': 8000,
             'tasa_timestamp': '2023-10-10T12:00:00Z'
         })
-
     return render(request, "dashboard.html", context)
 
 
 @login_required
 @role_required("Admin")
 def usuario_create(request):
-    """Vista para crear usuarios desde el panel de administración"""
+    """
+    Vista para crear usuarios desde el panel de administración.
+    Args:
+        request: HttpRequest
+    Returns:
+        HttpResponse con el formulario o redirección.
+    """
     if request.method == "POST":
         form = UserCreateForm(request.POST)
         if form.is_valid():
@@ -63,6 +67,10 @@ def usuario_create(request):
             messages.success(request, f"Usuario {user.email} creado exitosamente.")
             return redirect("usuarios:usuarios_list")
     else:
+        """
+        Vistas para la aplicación de usuarios.
+        Define las funciones y clases que gestionan las peticiones HTTP relacionadas con usuarios.
+        """
         form = UserCreateForm()
         # Por defecto, los usuarios creados desde admin están activos
         form.fields['is_active'].initial = True
@@ -72,9 +80,15 @@ def usuario_create(request):
 
 @login_required
 def usuarios_list(request):
-    from django.core.paginator import Paginator
+    """
+    Vista para listar usuarios registrados.
 
-    # Obtener parámetros de búsqueda y filtros
+    Permite filtrar por estado, rol y búsqueda por email. Muestra la lista paginada de usuarios.
+
+    :param request: HttpRequest
+    :return: HttpResponse con la lista paginada de usuarios
+    """
+    from django.core.paginator import Paginator
     search_query = request.GET.get('search', '')
     status_filter = request.GET.get('status', '')
     role_filter = request.GET.get('role', '')
@@ -102,6 +116,7 @@ def usuarios_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # ...existing code...
     # Obtener todos los roles para el filtro
     roles = Role.objects.all()
 
@@ -120,6 +135,14 @@ def usuarios_list(request):
 
 @login_required
 def usuario_edit(request, user_id):
+    """
+    Vista para editar un usuario existente.
+    Args:
+        request: HttpRequest
+        user_id: ID del usuario a editar.
+    Returns:
+        HttpResponse con el formulario de edición o redirección.
+    """
     usuario = get_object_or_404(User, pk=user_id)
     if request.method == "POST":
         form = UserForm(request.POST, instance=usuario)
@@ -137,6 +160,14 @@ def usuario_edit(request, user_id):
 
 @login_required
 def usuario_delete(request, user_id):
+    """
+    Vista para eliminar un usuario.
+    Args:
+        request: HttpRequest
+        user_id: ID del usuario a eliminar.
+    Returns:
+        HttpResponse con la confirmación de eliminación.
+    """
     usuario = get_object_or_404(User, pk=user_id)
     if request.method == "POST":
         usuario.delete()
@@ -146,6 +177,11 @@ def usuario_delete(request, user_id):
 
 
 def _enviar_verificacion(user):
+    """
+    Envía un correo de verificación de cuenta al usuario.
+
+    :param user: Usuario al que se envía el correo.
+    """
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     url = f"{settings.SITE_URL}/usuarios/verificar/{uid}/{token}/"
@@ -160,6 +196,13 @@ def _enviar_verificacion(user):
 
 
 def registro(request):
+    """
+    Vista para registrar un nuevo usuario.
+    Args:
+        request: HttpRequest
+    Returns:
+        HttpResponse con el formulario de registro o redirección.
+    """
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
@@ -176,6 +219,14 @@ def registro(request):
 
 
 def verificar_email(request, uidb64, token):
+    """
+    Vista para verificar el email de un usuario mediante enlace enviado por correo.
+
+    :param request: HttpRequest
+    :param uidb64: ID del usuario codificado en base64
+    :param token: Token de verificación
+    :return: Redirección a login con mensaje
+    """
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
@@ -194,6 +245,12 @@ def verificar_email(request, uidb64, token):
 
 
 def login_view(request):
+    """
+    Vista para iniciar sesión de usuario.
+
+    :param request: HttpRequest
+    :return: HttpResponse con el formulario de login o redirección
+    """
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -235,6 +292,14 @@ def roles_list(request):
 @login_required
 @role_required("Admin")
 def rol_create(request):
+    """
+    Vista para crear un nuevo rol en el sistema.
+
+    Muestra un formulario para ingresar el nombre y la descripción del rol.
+
+    :param request: HttpRequest
+    :return: HttpResponse con el formulario o redirección
+    """
     if request.method == "POST":
         form = RoleForm(request.POST)
         if form.is_valid():
@@ -271,6 +336,15 @@ def rol_edit(request, role_id):
 @login_required
 @role_required("Admin")
 def rol_delete(request, role_id):
+    """
+    Vista para eliminar un rol del sistema.
+
+    Muestra una confirmación y elimina el rol, mostrando cuántos usuarios se ven afectados.
+
+    :param request: HttpRequest
+    :param role_id: ID del rol a eliminar
+    :return: HttpResponse con la confirmación o redirección
+    """
     role = get_object_or_404(Role, pk=role_id)
 
     if request.method == "POST":
@@ -349,6 +423,13 @@ def ver_usuario_roles(request, user_id):
 
 @login_required
 def asignar_clientes_a_usuario(request, user_id):
+    """
+    Vista para asignar clientes a un usuario específico.
+
+    :param request: HttpRequest
+    :param user_id: ID del usuario
+    :return: HttpResponse con el formulario o redirección
+    """
     usuario = get_object_or_404(User, pk=user_id)
     if request.method == "POST":
         form = AsignarClientesAUsuarioForm(request.POST, usuario=usuario)

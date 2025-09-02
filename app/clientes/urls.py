@@ -1,3 +1,6 @@
+"""
+Rutas URL para la aplicación de clientes.
+"""
 from django.urls import path
 from . import views
 
