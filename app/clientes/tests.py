@@ -16,7 +16,7 @@ class ClienteModelTest(TestCase):
 		self.cliente.usuarios.add(self.user)
 
 	def test_cliente_str(self):
-		self.aEqual(str(self.cliente), "Empresa X (Corporativo)")
+		self.assertEqual(str(self.cliente), "Empresa X (Corporativo)")
 
 	def test_cliente_segmentos(self):
 		self.assertIn(self.cliente.tipo, dict(Cliente.SEGMENTOS))
@@ -54,6 +54,12 @@ class AsignarUsuariosAClienteFormTest(TestCase):
 class ClienteViewsTest(TestCase):
 	def setUp(self):
 		self.user = User.objects.create_user(email="viewuser@example.com", password="testpass123")
+		self.user.is_staff = True
+		self.user.save()
+		# Crear rol Admin y asociarlo al usuario
+		from usuarios.models import Role, UserRole
+		self.role = Role.objects.create(name="Admin", description="Administrador")
+		UserRole.objects.create(user=self.user, role=self.role)
 		self.client.force_login(self.user)
 		self.cliente = Cliente.objects.create(nombre="Empresa W", tipo="MIN")
 		self.cliente.usuarios.add(self.user)
@@ -61,6 +67,9 @@ class ClienteViewsTest(TestCase):
 	def test_clientes_list_view(self):
 		url = reverse("clientes:clientes_list")
 		response = self.client.get(url)
+		# Si la vista requiere login y rol, puede redirigir a login (302)
+		if response.status_code == 302:
+			self.fail("Redirigido, verifica permisos o login en la vista.")
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "Empresa W")
 
@@ -83,4 +92,5 @@ class ClienteViewsTest(TestCase):
 		url = reverse("clientes:cliente_delete", args=[self.cliente.id])
 		response = self.client.post(url)
 		self.assertEqual(response.status_code, 302)
-		self.assertFalse(Cliente.objects.filter(id=self.cliente.id).exists())
+		self.cliente.refresh_from_db()
+		self.assertTrue(self.cliente.is_deleted)

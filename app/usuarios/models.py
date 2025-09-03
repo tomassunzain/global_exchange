@@ -66,6 +66,7 @@ class User(AbstractUser):
 
     username = None
     email = models.EmailField(unique=True)
+    is_deleted = models.BooleanField(default=False, help_text="Indica si el usuario está eliminado lógicamente.")
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -96,9 +97,9 @@ class User(AbstractUser):
     def has_any_role(self, *role_names) -> bool:
         return self.user_roles.filter(role__name__in=role_names).exists()
 
-    def get_roles(self) -> list[str]:
-        # Corregido: era user_role, debe ser user_roles
-        return list(self.user_roles.values_list("role__name", flat=True))
+    def get_roles(self):
+        # Devuelve solo los roles no eliminados
+        return [ur.role for ur in self.user_roles.select_related('role').all() if not ur.role.is_deleted]
 
 class Role(models.Model):
     """
@@ -106,6 +107,7 @@ class Role(models.Model):
     """
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True)
+    is_deleted = models.BooleanField(default=False, help_text="Indica si el rol está eliminado lógicamente.")
 
     def __str__(self):
         """

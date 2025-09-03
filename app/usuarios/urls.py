@@ -26,6 +26,7 @@ urlpatterns = [
     path('usuarios/<int:user_id>/eliminar/', views.usuario_delete, name='usuario_delete'),
     path('usuarios/<int:user_id>/roles/', views.ver_usuario_roles, name='ver_usuario_roles'),
     path('usuarios/<int:user_id>/asignar-rol/', views.asignar_rol_a_usuario, name='asignar_rol'),
+    path('usuarios/<int:user_id>/usuario_restore/', views.usuario_restore, name='usuario_restore'),
 
     #Asignar Clientes a un Usuario
     path("<int:user_id>/asignar-clientes/", views.asignar_clientes_a_usuario, name="asignar_clientes"),
@@ -35,5 +36,6 @@ urlpatterns = [
     path('roles/nuevo/', views.rol_create, name='rol_create'),
     path('roles/<int:role_id>/editar/', views.rol_edit, name='rol_edit'),
     path('roles/<int:role_id>/eliminar/', views.rol_delete, name='rol_delete'),
+    path('roles/<int:role_id>/role_restore/', views.role_restore, name='role_restore'),
 ]
 

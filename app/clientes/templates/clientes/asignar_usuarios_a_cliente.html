@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Asignar Usuarios a Cliente{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h4 class="mb-0"><i class="bi bi-person-plus"></i> Asignar Usuarios a {{ cliente.nombre }}</h4>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label"><strong>Usuarios Asociados</strong></label>
+              {% for usuario in form.fields.usuarios.queryset %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="usuarios" id="usuario_{{ usuario.pk }}" value="{{ usuario.pk }}" {% if usuario in form.initial.usuarios %}checked{% endif %}>
+                  <label class="form-check-label" for="usuario_{{ usuario.pk }}">{{ usuario.email }}</label>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-info">
+                <i class="bi bi-person-plus"></i> Asignar Usuarios
+              </button>
+              <a href="{% url 'clientes:clientes_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

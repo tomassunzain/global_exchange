@@ -130,4 +130,5 @@ class UsuariosViewsTest(TestCase):
         url = reverse("usuarios:usuario_delete", args=[self.user.id])
         response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(User.objects.filter(id=self.user.id).exists())
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_deleted)

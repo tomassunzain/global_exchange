@@ -10,6 +10,8 @@ class Cliente(models.Model):
     Modelo que representa un cliente en el sistema.
     Almacena información relevante como nombre, correo, etc.
     """
+    is_deleted = models.BooleanField(default=False, help_text="Indica si el cliente está eliminado lógicamente.")
+
     SEGMENTOS = [
         ("MIN", "Minorista"),
         ("CORP", "Corporativo"),

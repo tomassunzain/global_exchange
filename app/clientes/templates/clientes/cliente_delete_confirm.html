@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Eliminar Cliente{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h4 class="mb-0"><i class="bi bi-trash"></i> Eliminar Cliente</h4>
+        </div>
+        <div class="card-body">
+          <p>¿Estás seguro que deseas eliminar el cliente <strong>{{ cliente.nombre }}</strong>?</p>
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Eliminar
+              </button>
+              <a href="{% url 'clientes:clientes_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
