@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Roles de {{ usuario.email }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <strong>Roles del Usuario</strong>
+          <div class="card-header-actions">
+            <a href="{% url 'usuarios:asignar_rol' usuario.id %}" class="btn btn-sm btn-primary">
+              <i class="cil-settings"></i> Modificar Roles
+            </a>
+            <a href="{% url 'usuarios:usuarios_list' %}" class="btn btn-sm btn-secondary">
+              <i class="cil-arrow-left"></i> Volver
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card border-primary">
+                <div class="card-body">
+                  <h5 class="card-title">Información del Usuario</h5>
+                  <p class="card-text">
+                    <strong>Email:</strong> {{ usuario.email }}<br>
+                    <strong>Estado:</strong> 
+                    {% if usuario.is_active %}
+                      <span>Activo</span>
+                    {% else %}
+                      <span>Inactivo</span>
+                    {% endif %}<br>
+                    <strong>Fecha de registro:</strong> {{ usuario.date_joined|date:"d/m/Y H:i" }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-12">
+              <h5>Roles Asignados</h5>
+              {% if roles_usuario %}
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>Nombre del Rol</th>
+                        <th>Descripción</th>
+                        <th>Fecha de Asignación</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for user_role in roles_usuario %}
+                        <tr>
+                          <td>
+                            <span>{{ user_role.role.name }}</span>
+                          </td>
+                          <td>{{ user_role.role.description|default:"Sin descripción" }}</td>
+                          <td>{{ user_role.assigned_at|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-warning">
+                  <i class="cil-warning"></i>
+                  Este usuario no tiene roles asignados.
+                  <a href="{% url 'usuarios:asignar_rol' usuario.id %}" class="btn btn-sm btn-primary ml-2">
+                    Asignar Roles
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
