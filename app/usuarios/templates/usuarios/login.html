@@ -32,7 +32,13 @@
               <div class="card-body">
                 <h1>Iniciar Sesión</h1>
                 <p class="text-body-secondary">Ingresá a tu cuenta</p>
-
+                {% if messages %}
+                  {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} mt-2" role="alert">
+                      {{ message }}
+                    </div>
+                  {% endfor %}
+                {% endif %}
                 <form method="post">
                   {% csrf_token %}
 

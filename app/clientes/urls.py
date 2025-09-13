@@ -13,6 +13,7 @@ urlpatterns = [
     path("nuevo/", views.cliente_create, name="cliente_create"),
     path("<int:cliente_id>/editar/", views.cliente_edit, name="cliente_edit"),
     path("<int:cliente_id>/eliminar/", views.cliente_delete, name="cliente_delete"),
+    path("<int:cliente_id>/restaurar/", views.cliente_restore, name="cliente_restore"),
 
     # Cambio de cliente activo
     path("seleccionar/<int:cliente_id>/", views.seleccionar_cliente, name="seleccionar_cliente"),

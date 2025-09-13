@@ -76,9 +76,18 @@ class UserForm(forms.ModelForm):
         help_text="Dejar en blanco para mantener la contraseña actual"
     )
 
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)
+        if commit:
+            user.save()
+        return user
+
     class Meta:
         model = User
-        fields = ["email", "is_active", "password"]
+        fields = ["email", "is_active"]
         widgets = {
             'email': forms.EmailInput(attrs={
                 'class': 'form-control',
@@ -167,10 +176,10 @@ class AsignarRolForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.user = user
 
-        # Obtener todos los roles disponibles
-        roles = Role.objects.all()
+        from commons.enums import EstadoRegistroEnum
+        roles = Role.objects.filter(estado=EstadoRegistroEnum.ACTIVO.value)
 
-        # Crear checkboxes para cada rol
+        # Crear checkboxes para cada rol válido
         choices = [(role.id, role.name) for role in roles]
         self.fields['roles'] = forms.MultipleChoiceField(
             choices=choices,

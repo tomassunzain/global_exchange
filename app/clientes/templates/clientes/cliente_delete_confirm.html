@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Eliminar Rol - {{ role.name }}{% endblock %}
+{% block title %}Eliminar Cliente - {{ cliente.nombre }}{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'usuarios:dashboard' %}">Inicio</a>
-<a href="{% url 'usuarios:roles_list' %}" class="breadcrumb-item">Roles</a>
-<span class="breadcrumb-item active">Eliminar Rol</span>
+<a href="{% url 'clientes:clientes_list' %}" class="breadcrumb-item">Clientes</a>
+<span class="breadcrumb-item active">Eliminar Cliente</span>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
   <div class="row justify-content-center">
-    <div class="col-md-10">
+    <div class="col-md-8">
       <div class="card border-danger">
         <div class="card-header bg-danger text-white">
           <strong>
             <i class="bi bi-exclamation-triangle"></i>
-            Confirmar Eliminación de Rol
+            Confirmar Eliminación de Cliente
           </strong>
           <div class="card-header-actions">
-            <a href="{% url 'usuarios:roles_list' %}" class="btn btn-sm btn-outline-light">
+            <a href="{% url 'clientes:clientes_list' %}" class="btn btn-sm btn-outline-light">
               <i class="bi bi-arrow-left"></i> Volver
             </a>
           </div>
@@ -28,33 +28,26 @@
         <div class="card-body">
           <div class="alert alert-danger">
             <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>¡Atención!</strong> Esta acción eliminará permanentemente el rol y no se puede deshacer.
+            <strong>¡Atención!</strong> Esta acción eliminará el cliente y puede afectar a usuarios asociados.
           </div>
 
-          <h5>¿Está seguro que desea eliminar el rol "{{ role.name }}"?</h5>
+          <h5>¿Está seguro que desea eliminar el cliente "<strong>{{ cliente.nombre }}</strong>"?</h5>
 
           <div class="row mt-4">
             <div class="col-md-6">
               <div class="card">
                 <div class="card-body">
-                  <h6 class="card-title">
-                    <i class="bi bi-info-circle text-info"></i>
-                    Información del Rol
-                  </h6>
+                  <h6 class="card-title">Información del Cliente</h6>
                   <p class="card-text">
-                    <strong>ID:</strong> {{ role.id }}<br>
-                    <strong>Nombre:</strong> {{ role.name }}<br>
-                    <strong>Descripción:</strong> {{ role.description|default:"Sin descripción" }}<br>
-                    <strong>Usuarios asignados:</strong>
-                    <span class="badge {% if role.user_roles.count > 0 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                      {{ role.user_roles.count }}
-                    </span>
+                    <strong>Nombre:</strong> {{ cliente.nombre }}<br>
+                    <strong>Categoría:</strong> {{ cliente.get_tipo_display }}<br>
+                    <strong>Usuarios asociados:</strong> {{ cliente.usuarios.count }}
                   </p>
                 </div>
               </div>
             </div>
 
-            {% if role.user_roles.count > 0 %}
+            {% if cliente.usuarios.exists %}
               <div class="col-md-6">
                 <div class="card border-warning">
                   <div class="card-body">
@@ -62,18 +55,15 @@
                       <i class="bi bi-exclamation-circle"></i>
                       Usuarios Afectados
                     </h6>
-                    <p class="card-text">
-                      Los siguientes usuarios perderán este rol:
-                    </p>
-                    <div class="max-height-200 overflow-auto">
-                      {% for user_role in role.user_roles.all %}
-                        <div class="d-flex align-items-center mb-2">
-                          <i class="bi bi-person text-muted me-2"></i>
-                          <strong>{{ user_role.user.email }}</strong>
-                          <small class="text-muted ms-2">(desde {{ user_role.assigned_at|date:"d/m/Y" }})</small>
-                        </div>
+                    <p class="card-text">Este cliente tiene usuarios asociados:</p>
+                    <div class="mb-2">
+                      {% for u in cliente.usuarios.all %}
+                        <span class="badge bg-info me-1 mb-1">{{ u.email }}</span>
                       {% endfor %}
                     </div>
+                    <small class="text-muted">
+                      Estos usuarios perderán acceso a operar con este cliente.
+                    </small>
                   </div>
                 </div>
               </div>
@@ -81,7 +71,7 @@
           </div>
 
           <!-- Advertencias adicionales -->
-          <div class="row mt-4">
+          <div class="row mt-3">
             <div class="col-12">
               <div class="alert alert-warning">
                 <h6 class="alert-heading">
@@ -89,64 +79,34 @@
                   Consecuencias de la eliminación:
                 </h6>
                 <ul class="mb-0">
-                  <li>El rol se eliminará permanentemente del sistema</li>
-                  <li>Se eliminarán todas las asignaciones de este rol a usuarios</li>
-                  {% if role.user_roles.count > 0 %}
-                    <li><strong>{{ role.user_roles.count }} usuario(s)</strong> perderán este rol</li>
-                  {% endif %}
+                  <li>El cliente será marcado como eliminado</li>
+                  <li>Los usuarios asociados perderán vínculo con este cliente</li>
+                  <li>No se podrán realizar operaciones en su nombre</li>
                   <li>Esta acción no se puede revertir</li>
-                  <li>Los usuarios afectados mantendrán sus otros roles (si los tienen)</li>
                 </ul>
               </div>
             </div>
           </div>
 
-          <!-- Acciones -->
-          <div class="mt-4 d-flex gap-2 justify-content-center">
+          <div class="mt-4 d-flex gap-2">
             <a href="#"
                class="btn btn-danger"
                data-coreui-toggle="modal"
                data-coreui-target="#confirmDeleteModal"
-               data-message="¿Está absolutamente seguro que deseas eliminar el rol '{{ role.name }}'?"
-               data-url="{% url 'usuarios:rol_delete' role.id %}">
-              <i class="bi bi-trash"></i> Sí, Eliminar Rol "{{ role.name }}"
+               data-message="¿Está absolutamente seguro que deseas eliminar el cliente '{{ cliente.nombre }}'?"
+               data-url="{% url 'clientes:cliente_delete' cliente.id %}">
+              <i class="bi bi-trash"></i> Sí, Eliminar Cliente
             </a>
-            <a href="{% url 'usuarios:roles_list' %}" class="btn btn-secondary">
+            <a href="{% url 'clientes:clientes_list' %}" class="btn btn-secondary">
               <i class="bi bi-x-lg"></i>
               Cancelar
             </a>
           </div>
-
-          <!-- Información adicional si hay usuarios asignados -->
-          {% if role.user_roles.count > 0 %}
-            <div class="mt-4">
-              <div class="alert alert-info">
-                <h6 class="alert-heading">
-                  <i class="bi bi-lightbulb"></i>
-                  Alternativas recomendadas:
-                </h6>
-                <ul class="mb-0">
-                  <li>Considera <strong>reasignar los usuarios</strong> a otros roles antes de eliminar este rol</li>
-                  <li>Puedes <strong>editar el rol</strong> en lugar de eliminarlo si solo necesitas cambiar su nombre o descripción</li>
-                  <li>Revisa que los usuarios afectados no queden sin ningún rol asignado</li>
-                </ul>
-                <div class="mt-2">
-                  <a href="{% url 'usuarios:rol_edit' role.id %}" class="btn btn-sm btn-outline-info">
-                    <i class="bi bi-pencil"></i> Editar Rol en su lugar
-                  </a>
-                  <a href="{% url 'usuarios:usuarios_list' %}?role={{ role.name }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-people"></i> Ver Usuarios con este Rol
-                  </a>
-                </div>
-              </div>
-            </div>
-          {% endif %}
         </div>
       </div>
     </div>
   </div>
 </div>
-
 
 <!-- Modal de Confirmacion -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
@@ -159,7 +119,7 @@
         <button type="button" class="btn-close btn-close-white" data-coreui-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p id="confirmDeleteMessage">¿Estás seguro que deseas eliminar este rol?</p>
+        <p id="confirmDeleteMessage">¿Estás seguro que deseas eliminar este cliente?</p>
       </div>
       <div class="modal-footer">
         <form id="confirmDeleteForm" method="post">
@@ -175,12 +135,6 @@
     </div>
   </div>
 </div>
-
-<style>
-.max-height-200 {
-  max-height: 200px;
-}
-</style>
 {% endblock %}
 
 {% block extra_js %}

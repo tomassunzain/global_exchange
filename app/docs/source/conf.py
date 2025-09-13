@@ -44,7 +44,7 @@ extensions = [
 # Configuración de tema y rutas de archivos estáticos
 html_theme = "sphinx_rtd_theme"
 templates_path = ["_templates"]
-html_static_path = ["_static"]
+html_static_path = [""]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/__pycache__/**"]
 
 # Extensiones extra para MyST

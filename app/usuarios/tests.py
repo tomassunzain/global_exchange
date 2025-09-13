@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from .models import Role, User, UserRole
 from .forms import RegistroForm, UserCreateForm, RoleForm
+from commons.enums import EstadoRegistroEnum
 
 class UserModelTest(TestCase):
     def test_create_user(self):
@@ -130,4 +131,6 @@ class UsuariosViewsTest(TestCase):
         url = reverse("usuarios:usuario_delete", args=[self.user.id])
         response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(User.objects.filter(id=self.user.id).exists())
+        self.user.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.estado, EstadoRegistroEnum.ELIMINADO.value)

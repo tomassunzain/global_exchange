@@ -6,17 +6,17 @@ Incluye vistas para registro, login, verificación de cuenta y gestión de sesio
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login, logout, get_user_model
+from django.contrib.auth import login, logout, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-
 from .decorators import role_required
 from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm, UserCreateForm
 from .models import Role, UserRole
+from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
 
 User = get_user_model()
@@ -49,6 +49,19 @@ def dashboard_view(request):
         })
     return render(request, "dashboard.html", context)
 
+@login_required
+@role_required("Admin")
+def usuario_restore(request, user_id):
+    """
+    Vista para restaurar un usuario eliminado lógicamente.
+    """
+    usuario = get_object_or_404(User, pk=user_id)
+    if request.method == "POST":
+        usuario.estado = EstadoRegistroEnum.ACTIVO.value
+        usuario.save()
+        messages.success(request, "Usuario restaurado correctamente.")
+        return redirect("usuarios:usuarios_list")
+    return render(request, "usuarios/usuario_restore_confirm.html", {"usuario": usuario})
 
 @login_required
 @role_required("Admin")
@@ -79,6 +92,7 @@ def usuario_create(request):
 
 
 @login_required
+@role_required("Admin")
 def usuarios_list(request):
     """
     Vista para listar usuarios registrados.
@@ -93,8 +107,13 @@ def usuarios_list(request):
     status_filter = request.GET.get('status', '')
     role_filter = request.GET.get('role', '')
 
+    # Filtro para mostrar/ocultar eliminados
+    show_deleted = request.GET.get('show_deleted', '0') == '1'
+
     # Consulta base
     usuarios = User.objects.all()
+    if not show_deleted:
+        usuarios = usuarios.filter(estado=EstadoRegistroEnum.ACTIVO.value)
 
     # Aplicar filtros
     if search_query:
@@ -127,6 +146,7 @@ def usuarios_list(request):
         "search_query": search_query,
         "status_filter": status_filter,
         "role_filter": role_filter,
+        "show_deleted": show_deleted,
         "total_usuarios": usuarios.count(),
     }
 
@@ -134,6 +154,7 @@ def usuarios_list(request):
 
 
 @login_required
+@role_required("Admin")
 def usuario_edit(request, user_id):
     """
     Vista para editar un usuario existente.
@@ -147,10 +168,13 @@ def usuario_edit(request, user_id):
     if request.method == "POST":
         form = UserForm(request.POST, instance=usuario)
         if form.is_valid():
-            user = form.save(commit=False)
-            if form.cleaned_data["password"]:
-                user.set_password(form.cleaned_data["password"])
-            user.save()
+            password = form.cleaned_data.get("password")
+            form.save()
+            # Si el usuario editado es el mismo que el logueado y se cambió la contraseña, actualiza la sesión para evitar logout
+            if password and request.user.pk == usuario.pk:
+                update_session_auth_hash(request, usuario)
+                messages.success(request, "Contraseña actualizada correctamente.")
+                return redirect("usuarios:usuarios_list")
             messages.success(request, "Usuario actualizado.")
             return redirect("usuarios:usuarios_list")
     else:
@@ -159,6 +183,7 @@ def usuario_edit(request, user_id):
 
 
 @login_required
+@role_required("Admin")
 def usuario_delete(request, user_id):
     """
     Vista para eliminar un usuario.
@@ -170,8 +195,9 @@ def usuario_delete(request, user_id):
     """
     usuario = get_object_or_404(User, pk=user_id)
     if request.method == "POST":
-        usuario.delete()
-        messages.success(request, "Usuario eliminado.")
+        usuario.estado = EstadoRegistroEnum.ELIMINADO.value
+        usuario.save()
+        messages.success(request, "Usuario eliminado lógicamente.")
         return redirect("usuarios:usuarios_list")
     return render(request, "usuarios/usuario_delete_confirm.html", {"usuario": usuario})
 
@@ -253,12 +279,18 @@ def login_view(request):
     """
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
+        email = request.POST.get('username', '').strip().lower()
+        try:
+            user = User.objects.get(email=email)
+            if not user.is_active or user.estado == EstadoRegistroEnum.ELIMINADO.value:
+                messages.error(request, "Tu cuenta está inactiva o eliminada. Contacta al administrador.")
+                form.errors.pop('__all__', None)  # Elimina el error por defecto
+                return render(request, 'usuarios/login.html', {'form': form})
+        except User.DoesNotExist:
+            pass  # Deja que el formulario maneje el error de usuario inexistente
+
         if form.is_valid():
-            # verifica que sea user activo
             user = form.get_user()
-            if not user.is_active:
-                messages.error(request, "Tu cuenta aun no esta verificada.")
-                return redirect('usuarios:login')
             login(request, user)
             return redirect('usuarios:dashboard')
     else:
@@ -285,8 +317,17 @@ def roles_list(request):
     :param request: HttpRequest.
     :return: HttpResponse con la lista de roles.
     """
+
+    # Filtro para mostrar/ocultar eliminados
+    show_deleted = request.GET.get('show_deleted', '0') == '1'
+
+    # Consulta base
+ 
     roles = Role.objects.all()
-    return render(request, "usuarios/roles_list.html", {"roles": roles})
+    if not show_deleted:
+        roles = roles.filter(estado=EstadoRegistroEnum.ACTIVO.value)
+
+    return render(request, "usuarios/roles_list.html", {"roles": roles, "show_deleted": show_deleted})
 
 
 @login_required
@@ -352,26 +393,28 @@ def rol_delete(request, role_id):
         users_count = role.user_roles.count()
         affected_users = [ur.user.email for ur in role.user_roles.all()]
 
-        # Eliminar el rol (esto también eliminará las relaciones UserRole por CASCADE)
-        role_name = role.name
-        role.delete()
-
-        # Mensaje de éxito diferente según si había usuarios asignados
-        if users_count > 0:
-            messages.success(
-                request,
-                f'Rol "{role_name}" eliminado exitosamente. '
-                f'{users_count} usuario(s) ya no tienen este rol asignado: {", ".join(affected_users[:3])}'
-                + (f' y {users_count - 3} más.' if users_count > 3 else '.')
-            )
-        else:
-            messages.success(request, f'Rol "{role_name}" eliminado exitosamente.')
+        role.estado = EstadoRegistroEnum.ELIMINADO.value
+        role.save()
+        messages.success(request, "Role eliminado lógicamente.")
 
         return redirect("usuarios:roles_list")
 
     # Para GET request, mostrar página de confirmación
     return render(request, "usuarios/rol_delete_confirm.html", {"role": role})
 
+@login_required
+@role_required("Admin")
+def role_restore(request, role_id):
+    """
+    Vista para restaurar un rol eliminado lógicamente.
+    """
+    role = get_object_or_404(Role, pk=role_id)
+    if request.method == "POST":
+        role.estado = EstadoRegistroEnum.ACTIVO.value
+        role.save()
+        messages.success(request, "Rol restaurado correctamente.")
+        return redirect("usuarios:roles_list")
+    return render(request, "usuarios/role_restore_confirm.html", {"role": role})
 
 @login_required
 @role_required("Admin")
@@ -411,6 +454,7 @@ def asignar_rol_a_usuario(request, user_id):
 
 
 @login_required
+@role_required("Admin")
 def ver_usuario_roles(request, user_id):
     """Vista para ver los roles de un usuario específico"""
     usuario = get_object_or_404(User, pk=user_id)
@@ -422,6 +466,7 @@ def ver_usuario_roles(request, user_id):
     })
 
 @login_required
+@role_required("Admin")
 def asignar_clientes_a_usuario(request, user_id):
     """
     Vista para asignar clientes a un usuario específico.
