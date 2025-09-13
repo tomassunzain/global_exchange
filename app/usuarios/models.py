@@ -7,6 +7,7 @@ Define el modelo de usuario y el gestor de usuarios basado en email.
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from commons.enums import EstadoRegistroEnum
 
 class UserManager(BaseUserManager):
     """
@@ -66,7 +67,12 @@ class User(AbstractUser):
 
     username = None
     email = models.EmailField(unique=True)
-    is_deleted = models.BooleanField(default=False, help_text="Indica si el usuario está eliminado lógicamente.")
+    estado = models.CharField(
+        max_length=20,
+        choices=[(e.value, e.name.title()) for e in EstadoRegistroEnum],
+        default=EstadoRegistroEnum.ACTIVO.value,
+        help_text="Estado del usuario (activo, eliminado, suspendido, etc.)"
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -99,7 +105,7 @@ class User(AbstractUser):
 
     def get_roles(self):
         # Devuelve solo los roles no eliminados
-        return [ur.role for ur in self.user_roles.select_related('role').all() if not ur.role.is_deleted]
+        return [ur.role for ur in self.user_roles.select_related('role').all() if ur.role.estado == EstadoRegistroEnum.ACTIVO.value]
 
 class Role(models.Model):
     """
@@ -107,7 +113,12 @@ class Role(models.Model):
     """
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True)
-    is_deleted = models.BooleanField(default=False, help_text="Indica si el rol está eliminado lógicamente.")
+    estado = models.CharField(
+        max_length=20,
+        choices=[(e.value, e.name.title()) for e in EstadoRegistroEnum],
+        default=EstadoRegistroEnum.ACTIVO.value,
+        help_text="Estado del rol (activo, eliminado, suspendido, etc.)"
+    )
 
     def __str__(self):
         """

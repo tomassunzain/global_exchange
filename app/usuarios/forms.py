@@ -176,8 +176,8 @@ class AsignarRolForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.user = user
 
-        # Obtener solo roles activos y no eliminados
-        roles = Role.objects.filter(is_deleted=False)
+        from commons.enums import EstadoRegistroEnum
+        roles = Role.objects.filter(estado=EstadoRegistroEnum.ACTIVO.value)
 
         # Crear checkboxes para cada rol válido
         choices = [(role.id, role.name) for role in roles]

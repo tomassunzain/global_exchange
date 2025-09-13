@@ -30,7 +30,7 @@
     </thead>
     <tbody>
       {% for c in clientes %}
-      <tr {% if c.is_deleted %}class="table-danger"{% endif %}>
+  <tr {% if c.estado == 'eliminado' %}class="table-danger"{% endif %}>
         <td>{{ c.nombre }}</td>
         <td>{{ c.get_tipo_display }}</td>
         <td>
@@ -42,19 +42,15 @@
         </td>
         <td>
           <a href="{% url 'clientes:cliente_edit' c.id %}" class="btn btn-sm btn-warning">Editar</a>
-          {% if c.is_deleted %}
-            <a href="{% url 'clientes:cliente_restore' c.id %}" class="btn btn-sm btn-danger"
-                class="btn btn-sm btn-outline-success"
-                data-bs-toggle="tooltip"
-                title="Restaurar cliente">
-              <i class="bi bi-arrow-counterclockwise"></i>Restaurar
+          {% if c.estado == 'eliminado' %}
+            <a href="{% url 'clientes:cliente_restore' c.id %}" class="btn btn-sm btn-success"
+               data-bs-toggle="tooltip" title="Restaurar cliente">
+              <i class="bi bi-arrow-counterclockwise"></i>
             </a>
           {% else %}
             <a href="{% url 'clientes:cliente_delete' c.id %}" class="btn btn-sm btn-danger"
-                class="btn btn-sm btn-outline-danger"
-                data-bs-toggle="tooltip"
-                title="Eliminar cliente">
-              <i class="bi bi-trash"></i>Eliminar
+               data-bs-toggle="tooltip" title="Eliminar cliente">
+              <i class="bi bi-trash"></i>
             </a>
         {% endif %}
           <a href="{% url 'clientes:asignar_usuarios' c.id %}" class="btn btn-sm btn-info">

@@ -13,10 +13,10 @@ from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-
 from .decorators import role_required
 from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm, UserCreateForm
 from .models import Role, UserRole
+from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
 
 User = get_user_model()
@@ -57,7 +57,7 @@ def usuario_restore(request, user_id):
     """
     usuario = get_object_or_404(User, pk=user_id)
     if request.method == "POST":
-        usuario.is_deleted = False
+        usuario.estado = EstadoRegistroEnum.ACTIVO.value
         usuario.save()
         messages.success(request, "Usuario restaurado correctamente.")
         return redirect("usuarios:usuarios_list")
@@ -113,7 +113,7 @@ def usuarios_list(request):
     # Consulta base
     usuarios = User.objects.all()
     if not show_deleted:
-        usuarios = usuarios.filter(is_deleted=False)
+        usuarios = usuarios.filter(estado=EstadoRegistroEnum.ACTIVO.value)
 
     # Aplicar filtros
     if search_query:
@@ -195,7 +195,7 @@ def usuario_delete(request, user_id):
     """
     usuario = get_object_or_404(User, pk=user_id)
     if request.method == "POST":
-        usuario.is_deleted = True
+        usuario.estado = EstadoRegistroEnum.ELIMINADO.value
         usuario.save()
         messages.success(request, "Usuario eliminado lógicamente.")
         return redirect("usuarios:usuarios_list")
@@ -282,7 +282,7 @@ def login_view(request):
         email = request.POST.get('username', '').strip().lower()
         try:
             user = User.objects.get(email=email)
-            if not user.is_active or user.is_deleted:
+            if not user.is_active or user.estado == EstadoRegistroEnum.ELIMINADO.value:
                 messages.error(request, "Tu cuenta está inactiva o eliminada. Contacta al administrador.")
                 form.errors.pop('__all__', None)  # Elimina el error por defecto
                 return render(request, 'usuarios/login.html', {'form': form})
@@ -325,7 +325,7 @@ def roles_list(request):
  
     roles = Role.objects.all()
     if not show_deleted:
-        roles = roles.filter(is_deleted=False)
+        roles = roles.filter(estado=EstadoRegistroEnum.ACTIVO.value)
 
     return render(request, "usuarios/roles_list.html", {"roles": roles, "show_deleted": show_deleted})
 
@@ -393,7 +393,7 @@ def rol_delete(request, role_id):
         users_count = role.user_roles.count()
         affected_users = [ur.user.email for ur in role.user_roles.all()]
 
-        role.is_deleted = True
+        role.estado = EstadoRegistroEnum.ELIMINADO.value
         role.save()
         messages.success(request, "Role eliminado lógicamente.")
 
@@ -410,7 +410,7 @@ def role_restore(request, role_id):
     """
     role = get_object_or_404(Role, pk=role_id)
     if request.method == "POST":
-        role.is_deleted = False
+        role.estado = EstadoRegistroEnum.ACTIVO.value
         role.save()
         messages.success(request, "Rol restaurado correctamente.")
         return redirect("usuarios:roles_list")

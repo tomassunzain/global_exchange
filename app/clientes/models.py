@@ -4,13 +4,19 @@ Contiene las definiciones de las clases de modelo y sus métodos.
 """
 from django.db import models
 from django.conf import settings
+from commons.enums import EstadoRegistroEnum
 
 class Cliente(models.Model):
     """
     Modelo que representa un cliente en el sistema.
     Almacena información relevante como nombre, correo, etc.
     """
-    is_deleted = models.BooleanField(default=False, help_text="Indica si el cliente está eliminado lógicamente.")
+    estado = models.CharField(
+        max_length=20,
+        choices=[(e.value, e.name.title()) for e in EstadoRegistroEnum],
+        default=EstadoRegistroEnum.ACTIVO.value,
+        help_text="Estado del cliente (activo, eliminado, suspendido, etc.)"
+    )
 
     SEGMENTOS = [
         ("MIN", "Minorista"),

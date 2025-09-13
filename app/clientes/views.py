@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import Cliente
+from commons.enums import EstadoRegistroEnum
 from .forms import AsignarUsuariosAClienteForm, ClienteForm
 from usuarios.decorators import role_required
 
@@ -21,7 +22,7 @@ def clientes_list(request):
     # Consulta base
     clientes = Cliente.objects.all()
     if not show_deleted:
-        clientes = clientes.filter(is_deleted=False)
+        clientes = clientes.filter(estado=EstadoRegistroEnum.ACTIVO.value)
     clientes = clientes.order_by("-id")
     return render(request, "clientes/clientes_list.html", {"clientes": clientes, "show_deleted": show_deleted})
 
@@ -80,7 +81,7 @@ def cliente_delete(request, cliente_id):
     """
     cliente = get_object_or_404(Cliente, pk=cliente_id)
     if request.method == "POST":
-        cliente.is_deleted = True
+        cliente.estado = EstadoRegistroEnum.ELIMINADO.value
         cliente.save()
         messages.success(request, "Cliente eliminado lógicamente.")
         return redirect("clientes:clientes_list")
@@ -94,7 +95,7 @@ def cliente_restore(request, cliente_id):
     """
     cliente = get_object_or_404(Cliente, pk=cliente_id)
     if request.method == "POST":
-        cliente.is_deleted = False
+        cliente.estado = EstadoRegistroEnum.ACTIVO.value
         cliente.save()
         messages.success(request, "Cliente restaurado correctamente.")
         return redirect("clientes:clientes_list")

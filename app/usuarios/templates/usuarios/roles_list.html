@@ -48,7 +48,7 @@
                 </thead>
                 <tbody>
                   {% for role in roles %}
-                    <tr {% if role.is_deleted %}class="table-danger"{% endif %}>
+                    <tr {% if role.estado == 'eliminado' %}class="table-danger"{% endif %}>
                       <td><strong>{{ role.id }}</strong></td>
                       <td>
                         <span class="badge bg-primary">{{ role.name }}</span>
@@ -75,7 +75,7 @@
                              title="Editar rol">
                             <i class="bi bi-pencil"></i>
                           </a>
-                          {% if role.is_deleted %}
+                          {% if role.estado == 'eliminado' %}
                             <a href="{% url 'usuarios:role_restore' role.id %}"
                                class="btn btn-sm btn-outline-success"
                                data-bs-toggle="tooltip"
@@ -83,13 +83,13 @@
                               <i class="bi bi-arrow-counterclockwise"></i>
                             </a>
                           {% else %}
-                          <a href="{% url 'usuarios:rol_delete' role.id %}" 
-                             class="btn btn-sm btn-outline-danger" 
-                             data-bs-toggle="tooltip" 
-                             title="Eliminar rol">
-                            <i class="bi bi-trash"></i>
+                            <a href="{% url 'usuarios:rol_delete' role.id %}" 
+                               class="btn btn-sm btn-outline-danger" 
+                               data-bs-toggle="tooltip" 
+                               title="Eliminar rol">
+                              <i class="bi bi-trash"></i>
+                            </a>
                           {% endif %}
-                          </a>
                         </div>
                       </td>
                     </tr>

@@ -49,19 +49,16 @@
                 </thead>
                 <tbody>
                   {% for usuario in usuarios %}
-                    <tr {% if usuario.is_deleted %}class="table-danger"{% endif %}>
+                    <tr {% if usuario.estado == 'eliminado' %}class="table-danger"{% endif %}>
                       <td><strong>{{ usuario.id }}</strong></td>
                       <td>{{ usuario.email }}</td>
                       <td>
-                        {% if usuario.is_deleted %}
+                        {% if usuario.estado == 'eliminado' %}
                           <span class="badge bg-secondary ms-1">Eliminado</span>
-                        {% else %}
-                        {% if usuario.is_active %}
+                        {% elif usuario.is_active %}
                           <span class="badge bg-success">Activo</span>
                         {% else %}
                           <span class="badge bg-danger">Inactivo</span>
-                        {% endif %}
-
                         {% endif %}<br>
                       </td>
                       <td>
@@ -92,7 +89,7 @@
                              title="Editar usuario">
                             <i class="bi bi-pencil"></i>
                           </a>
-                          {% if usuario.is_deleted %}
+                          {% if usuario.estado == 'eliminado' %}
                             <a href="{% url 'usuarios:usuario_restore' usuario.id %}"
                                class="btn btn-sm btn-outline-success"
                                data-bs-toggle="tooltip"

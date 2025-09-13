@@ -93,4 +93,6 @@ class ClienteViewsTest(TestCase):
 		response = self.client.post(url)
 		self.assertEqual(response.status_code, 302)
 		self.cliente.refresh_from_db()
-		self.assertTrue(self.cliente.is_deleted)
+		self.cliente.refresh_from_db()
+		from commons.enums import EstadoRegistroEnum
+		self.assertEqual(self.cliente.estado, EstadoRegistroEnum.ELIMINADO.value)
