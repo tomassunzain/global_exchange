@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Monedas{% endblock %}
-
 {% block content %}
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -13,12 +12,11 @@
   <table class="table table-bordered table-hover">
     <thead class="table-light">
       <tr>
-        <th>Defecto</th>
+        <th>Base</th>
         <th>Código</th>
         <th>Nombre</th>
         <th>Símbolo</th>
         <th>Dec.</th>
-        <th>Tasa vs base</th>
         <th>Activa</th>
         <th>Acciones</th>
       </tr>
@@ -26,12 +24,11 @@
     <tbody>
       {% for m in monedas %}
       <tr>
-        <td class="text-center">{% if m.por_defecto %}⭐{% endif %}</td>
+        <td class="text-center">{% if m.es_base %}⭐{% endif %}</td>
         <td><strong>{{ m.codigo }}</strong></td>
         <td>{{ m.nombre }}</td>
         <td>{{ m.simbolo }}</td>
         <td>{{ m.decimales }}</td>
-        <td>{{ m.tasa_cambio }}</td>
         <td>{{ m.activa|yesno:"Sí,No" }}</td>
         <td>
           <a href="{% url 'monedas:moneda_edit' m.id %}" class="btn btn-sm btn-warning">Editar</a>
@@ -40,7 +37,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="8" class="text-center text-muted">No hay monedas registradas</td>
+        <td colspan="7" class="text-center text-muted">No hay monedas registradas</td>
       </tr>
       {% endfor %}
     </tbody>
