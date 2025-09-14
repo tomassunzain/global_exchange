@@ -9,12 +9,13 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.forms import SetPasswordForm
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from .decorators import role_required
-from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm, UserCreateForm
+from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm, UserCreateForm, PasswordResetRequestForm
 from .models import Role, UserRole
 from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
@@ -486,3 +487,69 @@ def asignar_clientes_a_usuario(request, user_id):
         form = AsignarClientesAUsuarioForm(usuario=usuario)
     return render(request, "usuarios/asignar_clientes.html", {"form": form, "usuario": usuario})
 
+# Recuperación de contraseña
+
+def password_reset_request(request):
+    """Solicitar enlace de recuperación de contraseña"""
+    if request.method == "POST":
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email'].strip().lower()
+            print(f"Email recibido: {email}")  # Para depuración
+
+            try:
+                user = User.objects.get(email=email)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                reset_link = f"{settings.SITE_URL}/usuarios/reset/{uid}/{token}/"
+
+                # Mostrar el enlace en la consola
+                print("=" * 50)
+                print("ENLACE DE RECUPERACIÓN DE CONTRASEÑA:")
+                print(reset_link)
+                print("=" * 50)
+
+            except User.DoesNotExist:
+                # Por seguridad, no revelamos si el email existe o no
+                print(f"No se encontró usuario con email: {email}")
+
+            # Siempre mostrar el mismo mensaje por seguridad
+            messages.success(request,
+                             "Si el correo existe en nuestro sistema, se generó un enlace de recuperación. Revisá la consola del servidor.")
+            return redirect('usuarios:login')
+    else:
+        form = PasswordResetRequestForm()
+
+    # Si es GET o el formulario es inválido, mostrar el formulario
+    return render(request, "usuarios/password_reset_form.html", {'form': form})
+
+def password_reset_done(request):
+    """Confirmación de envío de correo"""
+    return render(request, "usuarios/password_reset_done.html")
+
+
+def password_reset_confirm(request, uidb64, token):
+    """Resetear la contraseña usando el token"""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (User.DoesNotExist, ValueError, TypeError):
+        messages.error(request, "Enlace inválido o expirado.")
+        return redirect('usuarios:login')
+
+    if not default_token_generator.check_token(user, token):
+        messages.error(request, "Enlace inválido o expirado.")
+        return redirect('usuarios:login')
+
+    if request.method == "POST":
+        form = SetPasswordForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Contraseña actualizada correctamente. Ya podés iniciar sesión.")
+            return redirect('usuarios:login')
+        else:
+            pass  # Los errores estarán en form.errors
+    else:
+        form = SetPasswordForm(user)
+
+    return render(request, "usuarios/password_reset_confirm.html", {"form": form})
