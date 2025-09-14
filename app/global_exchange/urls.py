@@ -31,4 +31,5 @@ urlpatterns = [
         {"document_root": os.path.join(settings.BASE_DIR, "docs/build/html")},
         name="documentacion",
     ),
+    path('payments/', include('payments.urls', namespace='payments')),
 ]
