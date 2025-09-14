@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>{% if method %}Editar{% else %}Nuevo{% endif %} Método de Pago</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% if cliente %}
+            <div class="mb-3">
+                <label class="form-label fw-bold">Cliente</label>
+                <input type="text" class="form-control" value="{{ cliente.nombre }}" readonly>
+            </div>
+        {% endif %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-success">Guardar</button>
+        <a href="{% url 'payments:paymentmethod_list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

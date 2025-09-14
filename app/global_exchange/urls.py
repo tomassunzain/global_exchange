@@ -32,4 +32,5 @@ urlpatterns = [
         name="documentacion",
     ),
     path('monedas/', include('monedas.urls')),
+    path('payments/', include('payments.urls', namespace='payments')),
 ]
