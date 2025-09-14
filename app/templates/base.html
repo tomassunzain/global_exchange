@@ -140,6 +140,14 @@
                 Seguridad
               </a>
             </li>
+            
+            <!-- Métodos de Pago -->
+            <li class="nav-item">
+              <a class="nav-link {% if 'payment' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'payments:paymentmethod_list' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Métodos de Pago
+              </a>
+            </li>
           </ul>
         </li>
 
