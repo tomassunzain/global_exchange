@@ -19,6 +19,11 @@ urlpatterns = [
     path('registro/', views.registro, name='registro'),  # Registro público
     path('verificar/<uidb64>/<token>/', views.verificar_email, name='verificar'),
 
+    # Recuperación de contraseña
+    path('password_reset/', views.password_reset_request, name='password_reset'),
+    path('password_reset_done/', views.password_reset_done, name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
+
     # Gestión de usuarios
     path('usuarios/', views.usuarios_list, name='usuarios_list'),
     path('usuarios/crear/', views.usuario_create, name='usuario_create'),  # NUEVA: Crear usuario interno
