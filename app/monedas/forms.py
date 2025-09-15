@@ -1,7 +1,16 @@
+"""
+Forms de la app 'monedas'.
+
+- MonedaForm: formulario simple para ABM de Moneda. Los widgets incluyen
+  clases Bootstrap para una UI consistente con el resto del sistema.
+"""
+
 from django import forms
 from .models import Moneda
 
+
 class MonedaForm(forms.ModelForm):
+    """Formulario de alta/edición de monedas."""
     class Meta:
         model = Moneda
         fields = ['codigo', 'nombre', 'simbolo', 'decimales', 'activa', 'es_base']

@@ -1,3 +1,15 @@
+"""
+Vistas (FBV) de 'monedas'.
+
+Incluye:
+- Listado, creación, edición y eliminación de Moneda.
+- Tablero de tasas de cambio ('tasa_cambio'): muestra la última cotización por
+  moneda si existe en BD; si no, usa un mock estático y valida la base reportada
+  por la fuente vs la base del sistema.
+"""
+
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -6,14 +18,20 @@ from django.utils import timezone
 from .forms import MonedaForm
 from .models import Moneda, TasaCambio
 
+
 @login_required
 def monedas_list(request):
+    """Lista ordenada de monedas (base primero)."""
     monedas = Moneda.objects.all().order_by('-es_base', 'codigo')
     return render(request, 'monedas/monedas_list.html', {'monedas': monedas})
+
 
 @login_required
 @transaction.atomic
 def moneda_create(request):
+    """
+    Crea una moneda. Si se marca como base, se desmarcan automáticamente las demás.
+    """
     if request.method == 'POST':
         form = MonedaForm(request.POST)
         if form.is_valid():
@@ -26,9 +44,11 @@ def moneda_create(request):
         form = MonedaForm()
     return render(request, 'monedas/moneda_form.html', {'form': form})
 
+
 @login_required
 @transaction.atomic
 def moneda_edit(request, moneda_id):
+    """Edita una moneda. Si se marca como base, desmarca otras bases."""
     moneda = get_object_or_404(Moneda, pk=moneda_id)
     if request.method == 'POST':
         form = MonedaForm(request.POST, instance=moneda)
@@ -42,8 +62,10 @@ def moneda_edit(request, moneda_id):
         form = MonedaForm(instance=moneda)
     return render(request, 'monedas/moneda_form.html', {'form': form, 'moneda': moneda})
 
+
 @login_required
 def moneda_delete(request, moneda_id):
+    """Elimina una moneda no base; impide borrar la base."""
     moneda = get_object_or_404(Moneda, pk=moneda_id)
     if request.method == 'POST':
         if moneda.es_base:
@@ -57,19 +79,102 @@ def moneda_delete(request, moneda_id):
 
 @login_required
 def tasa_cambio(request):
-    # Obtener las tasas más recientes de cada moneda activa
-    tasas_recientes = TasaCambio.objects.filter(
-        activa=True,
-        moneda__activa=True
-    ).order_by('moneda__codigo', '-fecha_actualizacion').distinct('moneda__codigo')
+    """
+    Tablero de tasas:
+    - Si hay datos en BD: toma la última 'activa' por moneda (robusto en cualquier DB).
+    - Si no hay datos: usa un mock estático y valida la base reportada vs base del sistema.
+    """
+    # Moneda base del sistema
+    base = Moneda.objects.filter(es_base=True).first()
+    system_base = base.codigo if base else None
 
-    # Obtener la fecha REAL de la última actualización (la más reciente entre todas las tasas)
-    if tasas_recientes.exists():
-        ultima_actualizacion = tasas_recientes.latest('fecha_actualizacion').fecha_actualizacion
+    # 1) Intentamos sacar las últimas tasas por moneda desde BD (robusto para cualquier DB)
+    ultimas = {}
+    for t in TasaCambio.objects.select_related('moneda').filter(moneda__activa=True, activa=True).order_by('moneda__codigo', '-fecha_actualizacion'):
+        if t.moneda.codigo not in ultimas:
+            ultimas[t.moneda.codigo] = t
+    tasas = list(ultimas.values())
+
+    # 2) Si no hay en BD, usamos datos estáticos (mock)
+    api_base = None
+    ultima_actualizacion = None
+
+    if not tasas:
+        demo = [
+            {
+                "currency": "USD",
+                "buy": "7300.00",
+                "sell": "7400.00",
+                "base_currency": "PYG",
+                "source": "Banco Central del Paraguay",
+                "timestamp": "2025-09-13T22:15:00Z"
+            },
+            {
+                "currency": "EUR",
+                "buy": "8000.00",
+                "sell": "8200.00",
+                "base_currency": "PYG",
+                "source": "Banco Central del Paraguay",
+                "timestamp": "2025-09-13T22:15:00Z"
+            },
+        ]
+
+        # Validación de base (todas las entradas deberían traer la misma)
+        if demo:
+            api_base = demo[0].get('base_currency')
+            # Si alguna difiere, lo avisamos
+            if any(d.get('base_currency') != api_base for d in demo):
+                messages.warning(request, 'La base de la API no es consistente en las entradas recibidas.')
+
+            if system_base and api_base and api_base != system_base:
+                messages.warning(
+                    request,
+                    f'La API informa base {api_base}, pero el sistema usa {system_base}. Mostrando datos sin persistir.'
+                )
+
+        # Mapeamos a objetos similares a TasaCambio para la tabla (sin tocar BD)
+        # Reutilizamos monedas existentes si están creadas; si no, armamos placeholder
+        monedas_map = {m.codigo: m for m in Moneda.objects.all()}
+        tasas = []
+        for d in demo:
+            m = monedas_map.get(d['currency'])
+            if not m:
+                # Placeholder “ligero” con interfaz mínima usada en la template
+                class _M: pass
+                m = _M()
+                m.codigo = d['currency']
+                m.nombre = ''
+                m.simbolo = '$'
+                m.decimales = 0
+
+            class _T: pass
+            t = _T()
+            t.moneda = m
+            t.compra = Decimal(d['buy'])
+            t.venta  = Decimal(d['sell'])
+            t.variacion = Decimal('0')
+            tasas.append(t)
+
+        # Última actualización a partir del mock
+        try:
+            ultima_actualizacion = max(d['timestamp'] for d in demo)
+        except Exception:
+            ultima_actualizacion = timezone.now()
     else:
-        ultima_actualizacion = timezone.now()
+        # Hay datos en BD → base de API opcional (si guardaste base_codigo)
+        # Tomamos última actualización real de la BD
+        ultima_actualizacion = max(t.fecha_actualizacion for t in tasas)
+        # Si guardaste base_codigo/fuente/ts_fuente en el modelo, podés exponerlos en la UI
+        api_base = next((t.base_codigo for t in tasas if getattr(t, 'base_codigo', None)), None)
+        if system_base and api_base and api_base != system_base:
+            messages.warning(
+                request,
+                f'Las tasas en BD fueron cargadas con base {api_base}, distinta a la base del sistema {system_base}.'
+            )
 
-    return render(request, 'templates/dashboard.html', {
-        'tasas': tasas_recientes,
-        'ultima_actualizacion': ultima_actualizacion  # ← FECHA REAL
+    return render(request, 'monedas/tasa_cambio.html', {
+        'tasas': tasas,
+        'ultima_actualizacion': ultima_actualizacion,
+        'system_base': system_base,
+        'api_base': api_base,
     })

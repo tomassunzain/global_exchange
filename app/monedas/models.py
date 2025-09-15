@@ -1,3 +1,13 @@
+"""
+Modelos de la app 'monedas'.
+
+- Moneda: catálogo de monedas operables en el sistema. Debe existir una y solo
+  una moneda base (es_base=True). El código se normaliza a ISO 4217 (mayúsculas).
+- TasaCambio: último precio de compra/venta por moneda. El tablero mostrará la
+  cotización activa más reciente por cada moneda. (Puede incluir campos de
+  auditoría de fuente/base/timestamp si se desea persistir datos del proveedor).
+"""
+
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 
@@ -6,7 +16,14 @@ ISO4217 = RegexValidator(
     message='Usá un código ISO 4217 de 3 letras mayúsculas (ej.: PYG, USD, BRL).'
 )
 
+
 class Moneda(models.Model):
+    """
+    Catálogo de monedas. 'es_base' define la moneda base del sistema.
+
+    Regla de negocio:
+    - Debe existir como máximo una moneda con es_base=True (índice único parcial).
+    """
     codigo = models.CharField(
         'Código ISO', max_length=3, unique=True, validators=[ISO4217],
         help_text='Ej.: PYG, USD, BRL'
@@ -38,6 +55,7 @@ class Moneda(models.Model):
         ]
 
     def clean(self):
+        """Normaliza el código a mayúsculas ISO 4217."""
         if self.codigo:
             self.codigo = self.codigo.upper()
 
@@ -46,10 +64,20 @@ class Moneda(models.Model):
 
 
 class TasaCambio(models.Model):
+    """
+    Cotización (compra/venta) por moneda. Se recomienda mantener un único
+    registro 'activa=True' por moneda y dejar históricos en 'activa=False'.
+    """
     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE, related_name='tasas')
     compra = models.DecimalField('Compra', max_digits=12, decimal_places=2)
-    venta = models.DecimalField('Venta', max_digits=12, decimal_places=2)
+    venta  = models.DecimalField('Venta',  max_digits=12, decimal_places=2)
     variacion = models.DecimalField('Variación %', max_digits=5, decimal_places=2, default=0)
+
+    # campos agregados para poder almacenar la respuesta de la API
+    base_codigo = models.CharField('Base de cotización', max_length=3, validators=[ISO4217], default='PYG')
+    fuente = models.CharField('Fuente', max_length=120, blank=True)
+    ts_fuente = models.DateTimeField('Timestamp (fuente)', null=True, blank=True)
+
     fecha_actualizacion = models.DateTimeField('Última actualización', auto_now=True)
     activa = models.BooleanField('Activa', default=True)
 
@@ -57,6 +85,12 @@ class TasaCambio(models.Model):
         ordering = ['-fecha_actualizacion']
         verbose_name = 'Tasa de Cambio'
         verbose_name_plural = 'Tasas de Cambio'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['moneda', 'ts_fuente', 'fuente'],
+                name='uniq_tasa_moneda_ts_fuente'
+            )
+        ]
 
     def __str__(self):
         return f'{self.moneda.codigo}: {self.compra}/{self.venta}'
