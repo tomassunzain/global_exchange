@@ -24,18 +24,60 @@
     </div>
   </div>
 
-  {% comment %} Tasa de cambio {% endcomment %}
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card text-bg-light mb-4">
-        <div class="card-header">
-          <strong>Tasa de Cambio</strong>
-        </div>
-        <div class="card-body">
-          <p><strong>USD/₲:</strong> {{ tasa_usd|default:"7.300" }}</p>
-          <p><strong>EUR/₲:</strong> {{ tasa_eur|default:"8.000" }}</p>
-          <small class="text-muted">Última actualización: {{ tasa_timestamp|default:"-" }}</small>
-        </div>
+   <!-- SECCIÓN DE TASAS DE CAMBIO -->
+  <div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"> Tasas de Cambio</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Moneda</th>
+              <th>Compra</th>
+              <th>Venta</th>
+              <th>Variación</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tasa in tasas_cambio %}
+            <tr>
+              <td>
+                <strong>{{ tasa.moneda.codigo }}</strong>
+                <br>
+                <small class="text-muted">{{ tasa.moneda.nombre }}</small>
+              </td>
+              <td class="fw-bold text-success">
+                Gs. {{ tasa.compra }}
+              </td>
+              <td class="fw-bold text-danger">
+                Gs. {{ tasa.venta }}
+              </td>
+              <td>
+                {% if tasa.variacion > 0 %}
+                  <span class="text-success">▲ {{ tasa.variacion }}%</span>
+                {% elif tasa.variacion < 0 %}
+                  <span class="text-danger">▼ {{ tasa.variacion }}%</span>
+                {% else %}
+                  <span class="text-warning">→ {{ tasa.variacion }}%</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">
+                No hay tasas de cambio disponibles
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-3 text-muted small">
+        <i class="bi bi-clock"></i>
+        Última actualización: {{ ultima_actualizacion_tasas|date:'d/m/Y H:i' }}
       </div>
     </div>
   </div>

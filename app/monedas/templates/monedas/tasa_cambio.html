@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Tasas de Cambio - Global Exchange{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">💱 Tasas de Cambio Global Exchange</h4>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Moneda</th>
+              <th>Compra</th>
+              <th>Venta</th>
+              <th>Variación</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tasa in tasas %}
+            <tr>
+              <td>
+                <strong>{{ tasa.moneda.codigo }}</strong>
+                <br>
+                <small class="text-muted">{{ tasa.moneda.nombre }}</small>
+              </td>
+              <td class="fw-bold text-success">
+                Gs. {{ tasa.compra }}
+              </td>
+              <td class="fw-bold text-danger">
+                Gs. {{ tasa.venta }}
+              </td>
+              <td>
+                {% if tasa.variacion > 0 %}
+                  <span class="text-success">▲ {{ tasa.variacion }}%</span>
+                {% elif tasa.variacion < 0 %}
+                  <span class="text-danger">▼ {{ tasa.variacion }}%</span>
+                {% else %}
+                  <span class="text-warning">→ {{ tasa.variacion }}%</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

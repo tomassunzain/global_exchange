@@ -43,3 +43,20 @@ class Moneda(models.Model):
 
     def __str__(self):
         return f'{self.codigo} - {self.nombre}'
+
+
+class TasaCambio(models.Model):
+    moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE, related_name='tasas')
+    compra = models.DecimalField('Compra', max_digits=12, decimal_places=2)
+    venta = models.DecimalField('Venta', max_digits=12, decimal_places=2)
+    variacion = models.DecimalField('Variación %', max_digits=5, decimal_places=2, default=0)
+    fecha_actualizacion = models.DateTimeField('Última actualización', auto_now=True)
+    activa = models.BooleanField('Activa', default=True)
+
+    class Meta:
+        ordering = ['-fecha_actualizacion']
+        verbose_name = 'Tasa de Cambio'
+        verbose_name_plural = 'Tasas de Cambio'
+
+    def __str__(self):
+        return f'{self.moneda.codigo}: {self.compra}/{self.venta}'

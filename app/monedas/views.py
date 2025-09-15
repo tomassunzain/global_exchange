@@ -2,9 +2,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
-
+from django.utils import timezone
 from .forms import MonedaForm
-from .models import Moneda
+from .models import Moneda, TasaCambio
 
 @login_required
 def monedas_list(request):
@@ -53,3 +53,23 @@ def moneda_delete(request, moneda_id):
         messages.success(request, 'Moneda eliminada.')
         return redirect('monedas:monedas_list')
     return render(request, 'monedas/moneda_delete_confirm.html', {'moneda': moneda})
+
+
+@login_required
+def tasa_cambio(request):
+    # Obtener las tasas más recientes de cada moneda activa
+    tasas_recientes = TasaCambio.objects.filter(
+        activa=True,
+        moneda__activa=True
+    ).order_by('moneda__codigo', '-fecha_actualizacion').distinct('moneda__codigo')
+
+    # Obtener la fecha REAL de la última actualización (la más reciente entre todas las tasas)
+    if tasas_recientes.exists():
+        ultima_actualizacion = tasas_recientes.latest('fecha_actualizacion').fecha_actualizacion
+    else:
+        ultima_actualizacion = timezone.now()
+
+    return render(request, 'templates/dashboard.html', {
+        'tasas': tasas_recientes,
+        'ultima_actualizacion': ultima_actualizacion  # ← FECHA REAL
+    })
