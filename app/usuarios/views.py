@@ -9,12 +9,13 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.forms import SetPasswordForm
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from .decorators import role_required
-from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm, UserCreateForm
+from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserForm, AsignarRolForm, RoleForm, UserCreateForm, PasswordResetRequestForm
 from .models import Role, UserRole
 from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
@@ -38,14 +39,83 @@ def dashboard_view(request):
         usuarios_activos = User.objects.filter(is_active=True).count()
         total_roles = Role.objects.count()
         total_clientes = Cliente.objects.count()
+        tasas = [
+            {
+                "base_currency": "PYG",
+                "currency": "ARS",
+                "buy": "4.500000",
+                "sell": "5.600000",
+                "source": "Cambios Chaco",
+                "timestamp": "2025-09-15T14:22:53.964357Z"
+            },
+            {
+                "base_currency": "PYG",
+                "currency": "BRL",
+                "buy": "1310.000000",
+                "sell": "1350.000000",
+                "source": "Cambios Chaco",
+                "timestamp": "2025-09-15T14:22:53.961464Z"
+            },
+            {
+                "base_currency": "PYG",
+                "currency": "CLP",
+                "buy": "6.000000",
+                "sell": "10.000000",
+                "source": "Cambios Chaco",
+                "timestamp": "2025-09-15T14:22:53.970341Z"
+            },
+            {
+                "base_currency": "PYG",
+                "currency": "EUR",
+                "buy": "8250.000000",
+                "sell": "8750.000000",
+                "source": "Cambios Chaco",
+                "timestamp": "2025-09-15T14:22:53.967095Z"
+            },
+            {
+                "base_currency": "PYG",
+                "currency": "GBP",
+                "buy": "9500.000000",
+                "sell": "11000.000000",
+                "source": "Cambios Chaco",
+                "timestamp": "2025-09-15T14:22:53.973501Z"
+            },
+            {
+                "base_currency": "PYG",
+                "currency": "USD",
+                "buy": "7130.000000",
+                "sell": "7210.000000",
+                "source": "Cambios Chaco",
+                "timestamp": "2025-09-15T14:22:53.953558Z"
+            }
+        ]
+        # Adaptar para el template: crear objetos simples
+        from decimal import Decimal
+        tasas_obj = []
+        for d in tasas:
+            class MonedaSimple:
+                pass
+            m = MonedaSimple()
+            m.codigo = d.get('currency', '')
+            m.nombre = d.get('currency', '')
+            m.simbolo = d.get('currency', '')
+            m.decimales = 2
+            class TasaSimple:
+                pass
+            t = TasaSimple()
+            t.moneda = m
+            t.compra = Decimal(d.get('buy', '0'))
+            t.venta = Decimal(d.get('sell', '0'))
+            t.variacion = Decimal('0')
+            tasas_obj.append(t)
+        ultima_actualizacion_tasas = max(d.get('timestamp', '') for d in tasas if d.get('timestamp'))
         context.update({
             'total_usuarios': total_usuarios,
             'total_clientes' : total_clientes,
             'usuarios_activos': usuarios_activos,
             'total_roles': total_roles,
-            'tasa_usd': 7300,
-            'tasa_eur': 8000,
-            'tasa_timestamp': '2023-10-10T12:00:00Z'
+            'tasas': tasas_obj,
+            'ultima_actualizacion_tasas': ultima_actualizacion_tasas
         })
     return render(request, "dashboard.html", context)
 
@@ -486,3 +556,69 @@ def asignar_clientes_a_usuario(request, user_id):
         form = AsignarClientesAUsuarioForm(usuario=usuario)
     return render(request, "usuarios/asignar_clientes.html", {"form": form, "usuario": usuario})
 
+# Recuperación de contraseña
+
+def password_reset_request(request):
+    """Solicitar enlace de recuperación de contraseña"""
+    if request.method == "POST":
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email'].strip().lower()
+            print(f"Email recibido: {email}")  # Para depuración
+
+            try:
+                user = User.objects.get(email=email)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                reset_link = f"{settings.SITE_URL}/usuarios/reset/{uid}/{token}/"
+
+                # Mostrar el enlace en la consola
+                print("=" * 50)
+                print("ENLACE DE RECUPERACIÓN DE CONTRASEÑA:")
+                print(reset_link)
+                print("=" * 50)
+
+            except User.DoesNotExist:
+                # Por seguridad, no revelamos si el email existe o no
+                print(f"No se encontró usuario con email: {email}")
+
+            # Siempre mostrar el mismo mensaje por seguridad
+            messages.success(request,
+                             "Si el correo existe en nuestro sistema, se generó un enlace de recuperación. Revisá la consola del servidor.")
+            return redirect('usuarios:login')
+    else:
+        form = PasswordResetRequestForm()
+
+    # Si es GET o el formulario es inválido, mostrar el formulario
+    return render(request, "usuarios/password_reset_form.html", {'form': form})
+
+def password_reset_done(request):
+    """Confirmación de envío de correo"""
+    return render(request, "usuarios/password_reset_done.html")
+
+
+def password_reset_confirm(request, uidb64, token):
+    """Resetear la contraseña usando el token"""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (User.DoesNotExist, ValueError, TypeError):
+        messages.error(request, "Enlace inválido o expirado.")
+        return redirect('usuarios:login')
+
+    if not default_token_generator.check_token(user, token):
+        messages.error(request, "Enlace inválido o expirado.")
+        return redirect('usuarios:login')
+
+    if request.method == "POST":
+        form = SetPasswordForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Contraseña actualizada correctamente. Ya podés iniciar sesión.")
+            return redirect('usuarios:login')
+        else:
+            pass  # Los errores estarán en form.errors
+    else:
+        form = SetPasswordForm(user)
+
+    return render(request, "usuarios/password_reset_confirm.html", {"form": form})

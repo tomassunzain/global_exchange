@@ -245,3 +245,34 @@ class AsignarClientesAUsuarioForm(forms.Form):
         self.usuario.clientes.set(self.cleaned_data["clientes"])
         self.usuario.save()
         return self.usuario
+
+
+class PasswordResetRequestForm(forms.Form):
+    """
+    Formulario para solicitar restablecimiento de contraseña.
+
+    Campo:
+        email (EmailField): Correo electrónico del usuario.
+    """
+    email = forms.EmailField(
+        label="Correo electrónico",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Correo electrónico',
+            'required': True
+        })
+    )
+
+    def clean_email(self):
+        """
+        Valida que el correo electrónico exista en el sistema.
+
+        :return: Correo electrónico validado.
+        :raises ValidationError: Si el correo no existe.
+        """
+        email = self.cleaned_data['email'].strip().lower()
+        if not User.objects.filter(email__iexact=email).exists():
+            # Por seguridad, no revelamos si el email existe o no
+            # Simplemente validamos el formato pero no mostramos error
+            pass
+        return email
