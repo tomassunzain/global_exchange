@@ -167,7 +167,7 @@
             
             <!-- Métodos de Pago -->
             <li class="nav-item">
-              <a class="nav-link {% if 'payment' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'payments:paymentmethod_list' %}">
+              <a class="nav-link {% if 'payment' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'payments:payment_methods_by_client' %}">
                 <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
                 Métodos de Pago
               </a>

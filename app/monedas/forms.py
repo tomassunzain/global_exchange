@@ -2,6 +2,9 @@ from django import forms
 from .models import Moneda
 
 class MonedaForm(forms.ModelForm):
+    """
+    Formulario para crear y editar instancias del modelo Moneda.
+    """
     class Meta:
         model = Moneda
         fields = ['codigo', 'nombre', 'simbolo', 'decimales', 'activa', 'es_base']

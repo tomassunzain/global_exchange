@@ -15,8 +15,15 @@
                         <ul class="list-unstyled mb-3">
                             {% for metodo in cliente.metodos_pago.all %}
                             <li class="d-flex align-items-center mb-1">
-                                <span class="me-2">{{ metodo.name }}</span>
-                                <span class="text-muted small">{{ metodo.description }}</span>
+                                {% if metodo.payment_type == 'cuenta_bancaria' %}
+                                    <span class="me-2">Cuenta bancaria: {{ metodo.banco }} - {{ metodo.numero_cuenta }}</span>
+                                {% elif metodo.payment_type == 'billetera' %}
+                                    <span class="me-2">Billetera: {{ metodo.proveedor_billetera }} - {{ metodo.billetera_email_telefono }}</span>
+                                {% elif metodo.payment_type == 'tarjeta' %}
+                                    <span class="me-2">Tarjeta: {{ metodo.tarjeta_nombre }} - {{ metodo.tarjeta_numero }}</span>
+                                {% else %}
+                                    <span class="me-2">Método de pago {{ metodo.pk }}</span>
+                                {% endif %}
                                 <a href="{% url 'payments:paymentmethod_update' metodo.pk %}" class="btn btn-outline-warning btn-sm ms-auto me-1" title="Editar"><i class="bi bi-pencil"></i></a>
                                 <a href="{% url 'payments:paymentmethod_delete' metodo.pk %}" class="btn btn-outline-danger btn-sm" title="Eliminar"><i class="bi bi-trash"></i></a>
                             </li>

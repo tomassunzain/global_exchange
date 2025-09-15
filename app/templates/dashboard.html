@@ -382,6 +382,9 @@ document.addEventListener('DOMContentLoaded', function() {
             opt2.textContent = moneda;
             selectDestino.appendChild(opt2);
           });
+          // Seleccionar por defecto PYG y USD
+          selectOrigen.value = 'PYG';
+          selectDestino.value = 'USD';
           // Mapear tasas para acceso rápido
           data.rates.forEach(rate => {
             ratesMap[`${rate.currency}_${rate.base_currency}`] = {
@@ -426,7 +429,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let resultado = null;
 
         if (origen === destino) {
-          resultado = monto;
+          const resultadoDiv = document.getElementById('resultado-simulador');
+          resultadoDiv.classList.remove('d-none', 'alert-success');
+          resultadoDiv.classList.add('alert-danger');
+          resultadoDiv.innerHTML = 'La moneda de origen no puede ser igual que la moneda de destino.';
+          return;
         } else if (origen === 'PYG') {
           // PYG a internacional: usar tasa sell de destino
           let rate = ratesMap[`${destino}_PYG`];
