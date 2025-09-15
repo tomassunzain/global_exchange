@@ -30,17 +30,8 @@ def payment_method_delete(request, pk):
 	if request.method == 'POST':
 		method.delete()
 		messages.success(request, 'Método de pago eliminado exitosamente.')
-		return redirect('payments:paymentmethod_list')
+		return redirect('payments:payment_methods_by_client')
 	return render(request, 'payments/paymentmethod_confirm_delete.html', {'method': method})
-def payment_method_list(request):
-	"""
-	Vista para listar los métodos de pago.
-
-	:param request: HttpRequest
-	:return: HttpResponse con la lista de métodos de pago
-	"""
-	methods = PaymentMethod.objects.all()
-	return render(request, 'payments/paymentmethod_list.html', {'methods': methods})
 
 def payment_method_create(request):
 	"""
@@ -63,7 +54,7 @@ def payment_method_create(request):
 			metodo.cliente = cliente
 			metodo.save()
 			messages.success(request, 'Método de pago creado exitosamente.')
-			return redirect('payments:paymentmethod_list')
+			return redirect('payments:payment_methods_by_client')
 	else:
 		form = PaymentMethodForm()
 	return render(request, 'payments/paymentmethod_form.html', {'form': form, 'cliente': cliente})
@@ -83,7 +74,7 @@ def payment_method_update(request, pk):
 		if form.is_valid():
 			form.save()
 			messages.success(request, 'Método de pago actualizado exitosamente.')
-			return redirect('payments:paymentmethod_list')
+			return redirect('payments:payment_methods_by_client')
 	else:
 		form = PaymentMethodForm(instance=method)
 	return render(request, 'payments/paymentmethod_form.html', {'form': form, 'method': method, 'cliente': cliente})

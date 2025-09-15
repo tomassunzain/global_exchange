@@ -18,12 +18,8 @@ ISO4217 = RegexValidator(
 
 
 class Moneda(models.Model):
-    """
-    Catálogo de monedas. 'es_base' define la moneda base del sistema.
 
-    Regla de negocio:
-    - Debe existir como máximo una moneda con es_base=True (índice único parcial).
-    """
+
     codigo = models.CharField(
         'Código ISO', max_length=3, unique=True, validators=[ISO4217],
         help_text='Ej.: PYG, USD, BRL'
@@ -55,11 +51,14 @@ class Moneda(models.Model):
         ]
 
     def clean(self):
-        """Normaliza el código a mayúsculas ISO 4217."""
+
         if self.codigo:
             self.codigo = self.codigo.upper()
 
     def __str__(self):
+        """
+        Retorna una representación legible de la moneda.
+        """
         return f'{self.codigo} - {self.nombre}'
 
 

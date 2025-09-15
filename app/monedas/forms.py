@@ -10,7 +10,6 @@ from .models import Moneda
 
 
 class MonedaForm(forms.ModelForm):
-    """Formulario de alta/edición de monedas."""
     class Meta:
         model = Moneda
         fields = ['codigo', 'nombre', 'simbolo', 'decimales', 'activa', 'es_base']

@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Cliente
+from .models import Cliente, TasaComision
 from commons.enums import EstadoRegistroEnum
-from .forms import AsignarUsuariosAClienteForm, ClienteForm
+from .forms import AsignarUsuariosAClienteForm, ClienteForm, TasaComisionForm
 from usuarios.decorators import role_required
 
 @login_required
@@ -138,3 +138,67 @@ def asignar_usuarios_a_cliente(request, cliente_id):
     else:
         form = AsignarUsuariosAClienteForm(instance=cliente)
     return render(request, "clientes/asignar_usuarios_a_cliente.html", {"form": form, "cliente": cliente})
+
+
+# ------- Listado -------
+@login_required
+@role_required("Admin")
+def comisiones_list(request):
+    show_deleted = request.GET.get("show_deleted", "0") == "1"
+    qs = TasaComision.objects.all().order_by("tipo_cliente", "-vigente_desde", "-id")
+    if not show_deleted:
+        qs = qs.filter(estado=EstadoRegistroEnum.ACTIVO.value)
+    return render(request, "clientes/comisiones_list.html", {"items": qs, "show_deleted": show_deleted})
+
+# ------- Crear -------
+@login_required
+@role_required("Admin")
+def comision_create(request):
+    if request.method == "POST":
+        form = TasaComisionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tasa de comisión creada.")
+            return redirect("clientes:comisiones_list")
+    else:
+        form = TasaComisionForm()
+    return render(request, "clientes/comision_form.html", {"form": form})
+
+# ------- Editar -------
+@login_required
+@role_required("Admin")
+def comision_edit(request, pk):
+    obj = get_object_or_404(TasaComision, pk=pk)
+    if request.method == "POST":
+        form = TasaComisionForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tasa de comisión actualizada.")
+            return redirect("clientes:comisiones_list")
+    else:
+        form = TasaComisionForm(instance=obj)
+    return render(request, "clientes/comision_form.html", {"form": form, "obj": obj})
+
+# ------- Eliminar lógico -------
+@login_required
+@role_required("Admin")
+def comision_delete(request, pk):
+    obj = get_object_or_404(TasaComision, pk=pk)
+    if request.method == "POST":
+        obj.estado = EstadoRegistroEnum.ELIMINADO.value
+        obj.save()
+        messages.success(request, "Tasa de comisión eliminada lógicamente.")
+        return redirect("clientes:comisiones_list")
+    return render(request, "clientes/comision_delete_confirm.html", {"obj": obj})
+
+# ------- Restaurar -------
+@login_required
+@role_required("Admin")
+def comision_restore(request, pk):
+    obj = get_object_or_404(TasaComision, pk=pk)
+    if request.method == "POST":
+        obj.estado = EstadoRegistroEnum.ACTIVO.value
+        obj.save()
+        messages.success(request, "Tasa de comisión restaurada.")
+        return redirect("clientes:comisiones_list")
+    return render(request, "clientes/comision_restore_confirm.html", {"obj": obj})

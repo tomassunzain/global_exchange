@@ -6,7 +6,7 @@
     <form method="post">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger">Eliminar</button>
-        <a href="{% url 'payments:paymentmethod_list' %}" class="btn btn-secondary">Cancelar</a>
+    <a href="{% url 'payments:payment_methods_by_client' %}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
 {% endblock %}

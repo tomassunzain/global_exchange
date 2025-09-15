@@ -24,6 +24,7 @@ urlpatterns = [
     path('', lambda r: redirect('usuarios:login'), name='login'),
     path('dashboard/', lambda r: redirect('usuarios:dashboard'), name='dashboard'),
     path('clientes/', include('clientes.urls', namespace='clientes')),
+    path('exchange/', include('exchange.urls', namespace='exchange')),
     path("docs/", RedirectView.as_view(url="/docs/index.html", permanent=False)),
     re_path(
         r"^docs/(?P<path>.*)$",

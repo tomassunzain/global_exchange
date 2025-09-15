@@ -21,7 +21,7 @@ from .models import Moneda, TasaCambio
 
 @login_required
 def monedas_list(request):
-    """Lista ordenada de monedas (base primero)."""
+
     monedas = Moneda.objects.all().order_by('-es_base', 'codigo')
     return render(request, 'monedas/monedas_list.html', {'monedas': monedas})
 
@@ -29,9 +29,7 @@ def monedas_list(request):
 @login_required
 @transaction.atomic
 def moneda_create(request):
-    """
-    Crea una moneda. Si se marca como base, se desmarcan automáticamente las demás.
-    """
+
     if request.method == 'POST':
         form = MonedaForm(request.POST)
         if form.is_valid():
@@ -48,7 +46,7 @@ def moneda_create(request):
 @login_required
 @transaction.atomic
 def moneda_edit(request, moneda_id):
-    """Edita una moneda. Si se marca como base, desmarca otras bases."""
+
     moneda = get_object_or_404(Moneda, pk=moneda_id)
     if request.method == 'POST':
         form = MonedaForm(request.POST, instance=moneda)
@@ -65,7 +63,7 @@ def moneda_edit(request, moneda_id):
 
 @login_required
 def moneda_delete(request, moneda_id):
-    """Elimina una moneda no base; impide borrar la base."""
+
     moneda = get_object_or_404(Moneda, pk=moneda_id)
     if request.method == 'POST':
         if moneda.es_base:
