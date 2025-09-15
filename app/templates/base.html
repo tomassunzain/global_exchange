@@ -117,6 +117,20 @@
               Nuevo Cliente
             </a>
           </li>
+        <!-- Tasas de Comisión -->
+        <li class="nav-item">
+          <a class="nav-link {% if 'comision' in request.resolver_match.app_name %}show{% endif %}" href="{% url 'clientes:comisiones_list' %}">
+            <span class="nav-icon"><i class="bi bi-percent"></i></span>
+            Tasas de Comisión
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'comision_create' %}active{% endif %}"
+             href="{% url 'clientes:comision_create' %}">
+            <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+            Nueva Tasa
+          </a>
+        </li>
         </ul>
       </li>
 
