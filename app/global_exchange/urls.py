@@ -21,7 +21,7 @@ import os
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
-    path('', lambda r: redirect('usuarios:login'), name='login'),
+    path('', __import__('global_exchange.views', fromlist=['landing_page']).landing_page, name='landing'),
     path('dashboard/', lambda r: redirect('usuarios:dashboard'), name='dashboard'),
     path('clientes/', include('clientes.urls', namespace='clientes')),
     path('exchange/', include('exchange.urls', namespace='exchange')),
