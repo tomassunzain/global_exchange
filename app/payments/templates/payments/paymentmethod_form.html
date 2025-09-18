@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="container mt-4">
     <h2>{% if method %}Editar{% else %}Nuevo{% endif %} Método de Pago</h2>
@@ -35,21 +36,7 @@
         <!-- campos-generales eliminados: ya no existen en el modelo ni en el form -->
         <button type="submit" class="btn btn-success">Guardar</button>
     <a href="{% url 'payments:payment_methods_by_client' %}" class="btn btn-secondary">Cancelar</a>
-        <script>
-        function mostrarCamposPorTipo(tipo) {
-            document.getElementById('campos-tarjeta').style.display = (tipo === 'tarjeta') ? '' : 'none';
-            document.getElementById('campos-cuenta').style.display = (tipo === 'cuenta_bancaria') ? '' : 'none';
-            document.getElementById('campos-billetera').style.display = (tipo === 'billetera') ? '' : 'none';
-        }
-        const selectTipo = document.getElementById('id_payment_type');
-        if (selectTipo) {
-            selectTipo.addEventListener('change', function() {
-                mostrarCamposPorTipo(this.value);
-            });
-            // Mostrar campos correctos al cargar
-            mostrarCamposPorTipo(selectTipo.value);
-        }
-        </script>
+        <script src="{% static 'payments/payment_form_restrict.js' %}"></script>
     </form>
 </div>
 {% endblock %}
