@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load usuarios_extras %}
 {% block title %}{% if obj %}Editar{% else %}Nueva{% endif %} Tasa{% endblock %}
 
 {% block content %}
@@ -40,7 +40,9 @@
   </div>
 
   <div class="mt-3 d-flex gap-2">
-    <button class="btn btn-primary">Guardar</button>
+    {% if request.user|has_permission:'comisiones.create' %}
+      <button class="btn btn-primary">Guardar</button>
+    {% endif %}
     <a class="btn btn-outline-secondary" href="{% url 'clientes:comisiones_list' %}">Cancelar</a>
   </div>
 </form>

@@ -1,10 +1,13 @@
 {% extends "base.html" %}
+{% load usuarios_extras %}
 {% block title %}Tasas de Comisión{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">Tasas de Comisión</h1>
-  <a class="btn btn-primary" href="{% url 'clientes:comision_create' %}">Nueva tasa</a>
+  {% if request.user|has_permission:'clientes.create_comision' %}
+    <a class="btn btn-primary" href="{% url 'clientes:comision_create' %}">Nueva tasa</a>
+  {% endif %}
 </div>
 
 <form class="mb-3" method="get">
@@ -35,10 +38,13 @@
       <td>{% if r.vigente_hasta %}{{ r.vigente_hasta|date:"d/m/Y" }}{% else %}—{% endif %}</td>
       <td>{{ r.estado }}</td>
       <td class="text-end">
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'clientes:comision_edit' r.pk %}">Editar</a>
-        {% if r.estado == "ELIMINADO" %}
+        {% if request.user|has_permission:'comisiones.edit' %}
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'clientes:comision_edit' r.pk %}">Editar</a>
+        {% endif %}
+        {% if request.user|has_permission:'comisiones.restore' and r.estado == "ELIMINADO" %}
           <a class="btn btn-sm btn-outline-success" href="{% url 'clientes:comision_restore' r.pk %}">Restaurar</a>
-        {% else %}
+        {% endif %}
+        {% if request.user|has_permission:'comisiones.delete' and r.estado != "ELIMINADO" %}
           <a class="btn btn-sm btn-outline-danger" href="{% url 'clientes:comision_delete' r.pk %}">Eliminar</a>
         {% endif %}
       </td>

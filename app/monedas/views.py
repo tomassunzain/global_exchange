@@ -9,7 +9,6 @@ Incluye:
 """
 
 from decimal import Decimal
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -17,11 +16,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from .forms import MonedaForm
 from .models import Moneda, TasaCambio
-
+from usuarios.decorators import role_required
 
 @login_required
 def monedas_list(request):
-
+    if not request.user.has_permission('monedas.list'):
+        messages.error(request, 'No tienes permisos para ver monedas.')
+        return redirect('usuarios:dashboard')
     monedas = Moneda.objects.all().order_by('-es_base', 'codigo')
     return render(request, 'monedas/monedas_list.html', {'monedas': monedas})
 
@@ -29,7 +30,9 @@ def monedas_list(request):
 @login_required
 @transaction.atomic
 def moneda_create(request):
-
+    if not request.user.has_permission('monedas.create'):
+        messages.error(request, 'No tienes permisos para crear monedas.')
+        return redirect('usuarios:dashboard')
     if request.method == 'POST':
         form = MonedaForm(request.POST)
         if form.is_valid():
@@ -46,7 +49,9 @@ def moneda_create(request):
 @login_required
 @transaction.atomic
 def moneda_edit(request, moneda_id):
-
+    if not request.user.has_permission('monedas.edit'):
+        messages.error(request, 'No tienes permisos para editar monedas.')
+        return redirect('usuarios:dashboard')
     moneda = get_object_or_404(Moneda, pk=moneda_id)
     if request.method == 'POST':
         form = MonedaForm(request.POST, instance=moneda)
@@ -63,7 +68,9 @@ def moneda_edit(request, moneda_id):
 
 @login_required
 def moneda_delete(request, moneda_id):
-
+    if not request.user.has_permission('monedas.delete'):
+        messages.error(request, 'No tienes permisos para eliminar monedas.')
+        return redirect('usuarios:dashboard')
     moneda = get_object_or_404(Moneda, pk=moneda_id)
     if request.method == 'POST':
         if moneda.es_base:
@@ -77,6 +84,9 @@ def moneda_delete(request, moneda_id):
 
 @login_required
 def tasa_cambio(request):
+    if not request.user.has_permission('monedas.tasa_cambio'):
+        messages.error(request, 'No tienes permisos para ver el tablero de tasas de cambio.')
+        return redirect('usuarios:dashboard')
     """
     Tablero de tasas:
     - Si hay datos en BD: toma la última 'activa' por moneda (robusto en cualquier DB).

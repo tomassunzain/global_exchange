@@ -197,13 +197,17 @@ class AsignarRolForm(forms.Form):
 
 class RoleForm(forms.ModelForm):
     """
-    Formulario para crear o editar roles.
-
-    Permite definir el nombre y la descripción de un rol.
+    Formulario para crear o editar roles y asignar permisos.
     """
+    permissions = forms.ModelMultipleChoiceField(
+        queryset=None,  # Se setea en __init__
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'})
+    )
+
     class Meta:
         model = Role
-        fields = ['name', 'description']
+        fields = ['name', 'description', 'permissions']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -215,6 +219,19 @@ class RoleForm(forms.ModelForm):
                 'placeholder': 'Descripción del rol'
             })
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Permission
+        GLOBAL_PERMISSIONS = [
+            'dashboard.view',
+            'password.reset_request',
+            'password.reset_confirm',
+            'password.reset_done',
+        ]
+        self.fields['permissions'].queryset = Permission.objects.exclude(code__in=GLOBAL_PERMISSIONS)
+        if self.instance.pk:
+            self.fields['permissions'].initial = self.instance.permissions.exclude(code__in=GLOBAL_PERMISSIONS)
 
 class AsignarClientesAUsuarioForm(forms.Form):
     """

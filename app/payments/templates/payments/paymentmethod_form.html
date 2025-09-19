@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load usuarios_extras %}
 {% block content %}
 <div class="container mt-4">
     <h2>{% if method %}Editar{% else %}Nuevo{% endif %} Método de Pago</h2>
@@ -33,7 +34,15 @@
             <div class="mb-3"><label class="form-label">Nombre del titular (opcional)</label>{{ form.billetera_titular }}</div>
         </div>
         <!-- campos-generales eliminados: ya no existen en el modelo ni en el form -->
-        <button type="submit" class="btn btn-success">Guardar</button>
+        {% if not method %}
+            {% if request.user|has_permission:'payments.create_method' %}
+                <button type="submit" class="btn btn-success">Guardar</button>
+            {% endif %}
+        {% elif method %}
+            {% if request.user|has_permission:'payments.edit_method' %}
+                <button type="submit" class="btn btn-success">Guardar</button>
+            {% endif %}
+        {% endif %}
     <a href="{% url 'payments:payment_methods_by_client' %}" class="btn btn-secondary">Cancelar</a>
         <script>
         function mostrarCamposPorTipo(tipo) {
