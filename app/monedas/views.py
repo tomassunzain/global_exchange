@@ -9,7 +9,6 @@ Incluye:
 """
 
 from decimal import Decimal
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
