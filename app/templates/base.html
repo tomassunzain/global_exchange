@@ -193,6 +193,13 @@
                 Métodos de Pago
               </a>
             </li>
+            <!-- Medios de Acreditación -->
+            <li class="nav-item">
+              <a class="nav-link {% if 'medios_acreditacion' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'medios_acreditacion:medios_by_client' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Medios de Acreditación
+              </a>
+            </li>
           </ul>
         </li>
 
