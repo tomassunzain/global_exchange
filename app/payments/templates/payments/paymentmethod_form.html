@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load usuarios_extras %}
 {% block content %}
 <div class="container mt-4">
     {% if form.errors %}
@@ -90,7 +91,15 @@
             <div class="mb-3"><label class="form-label">Fecha de emisión</label>{{ form.cheque_fecha_emision }}</div>
         </div>
         <!-- campos-generales eliminados: ya no existen en el modelo ni en el form -->
-        <button type="submit" class="btn btn-success">Guardar</button>
+        {% if not method %}
+            {% if request.user|has_permission:'payments.create_method' %}
+                <button type="submit" class="btn btn-success">Guardar</button>
+            {% endif %}
+        {% elif method %}
+            {% if request.user|has_permission:'payments.edit_method' %}
+                <button type="submit" class="btn btn-success">Guardar</button>
+            {% endif %}
+        {% endif %}
     <a href="{% url 'payments:payment_methods_by_client' %}" class="btn btn-secondary">Cancelar</a>
         <script src="{% static 'payments/payment_form_restrict.js' %}"></script>
     </form>
