@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
-from django.db import models
+from django.db import models, transaction
 
 ISO4217 = RegexValidator(
     regex=r'^[A-Z]{3}$',
@@ -180,22 +180,41 @@ class TasaCambio(models.Model):
         return Decimal('0.00')
 
     def save(self, *args, **kwargs):
-        # Forzar base PYG y veto a PYG en moneda
+        # Validaciones/forzados previos
         if self.moneda and self.moneda.es_base:
             raise ValidationError('No se puede guardar tasa para PYG.')
         self.base_codigo = 'PYG'
 
         is_new = self.pk is None
 
-        # La variación se calcula respecto a la última existente (antes de guardar la nueva)
+        # Calcular variación contra la última existente antes de persistir
         if is_new:
             self.variacion = self.calcular_variacion()
 
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            if is_new and self.activa:
+                # 1) Insertar INACTIVA para no violar la unique parcial
+                self.activa = False
+                super().save(*args, **kwargs)  # ahora ya tenemos self.pk
 
-        # Activación automática: esta queda activa y desactiva las otras
-        if self.activa:
-            (TasaCambio.objects
-             .filter(moneda=self.moneda)
-             .exclude(pk=self.pk)
-             .update(activa=False))
+                # 2) Apagar otras activas de la misma moneda
+                (TasaCambio.objects
+                 .select_for_update()
+                 .filter(moneda=self.moneda, activa=True)
+                 .exclude(pk=self.pk)
+                 .update(activa=False))
+
+                # 3) Promocionar esta como activa
+                self.activa = True
+                super().save(update_fields=['activa'])
+
+            else:
+                # Caso general (edición o creación no activa)
+                if self.activa:
+                    (TasaCambio.objects
+                     .select_for_update()
+                     .filter(moneda=self.moneda, activa=True)
+                     .exclude(pk=self.pk)
+                     .update(activa=False))
+
+                super().save(*args, **kwargs)

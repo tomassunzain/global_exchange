@@ -95,7 +95,7 @@
             </li>
           </ul>
         </li>
-      
+
         <!-- Gestión de Clientes -->
         <li class="nav-group {% if 'clientes' in request.resolver_match.app_name %}show{% endif %}">
         <a class="nav-link nav-group-toggle" href="#">
@@ -134,30 +134,57 @@
         </ul>
       </li>
 
-      <!-- Gestión de Monedas -->
-    <li class="nav-group {% if 'monedas' in request.resolver_match.app_name %}show{% endif %}">
-      <a class="nav-link nav-group-toggle" href="#">
-        <i class="nav-icon bi bi-cash-coin"></i>
-        Monedas
-      </a>
-      <ul class="nav-group-items compact">
-        <!-- Monedas (ABM) -->
-        <li class="nav-item">
-          <a class="nav-link {% if request.resolver_match.url_name == 'monedas_list' %}active{% endif %}"
-             href="{% url 'monedas:monedas_list' %}">
-            <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-            Lista de Monedas
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if request.resolver_match.url_name == 'moneda_create' %}active{% endif %}"
-             href="{% url 'monedas:moneda_create' %}">
-            <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-            Nueva Moneda
-          </a>
-        </li>
-      </ul>
-    </li>
+      <!-- Gestión de Monedas y Cotizaciones -->
+      <li class="nav-group {% if 'monedas' in request.resolver_match.app_name %}show{% endif %}">
+        <a class="nav-link nav-group-toggle" href="#">
+          <i class="nav-icon bi bi-cash-coin"></i>
+          Monedas
+        </a>
+        <ul class="nav-group-items compact">
+          <!-- Monedas (ABM) -->
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'monedas_list' %}active{% endif %}"
+               href="{% url 'monedas:monedas_list' %}">
+              <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+              Lista de Monedas
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'moneda_create' %}active{% endif %}"
+               href="{% url 'monedas:moneda_create' %}">
+              <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+              Nueva Moneda
+            </a>
+          </li>
+
+          <!-- Separador para Cotizaciones -->
+          <li class="nav-divider"></li>
+
+          <!-- Cotizaciones (Submenú) -->
+          <li class="nav-group">
+            <a class="nav-link nav-group-toggle" href="#">
+              <span class="nav-icon"><i class="bi bi-graph-up"></i></span>
+              Cotizaciones
+            </a>
+            <ul class="nav-group-items compact">
+              <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'tasas_list' %}active{% endif %}"
+                   href="{% url 'monedas:tasas_list' %}">
+                  <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                  Lista de Cotizaciones
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'tasa_create' %}active{% endif %}"
+                   href="{% url 'monedas:tasa_create' %}">
+                  <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                  Nueva Cotización
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
 
         <!-- Configuración -->
         <li class="nav-title">Sistema</li>
@@ -179,7 +206,7 @@
                 Seguridad
               </a>
             </li>
-            
+
             <!-- Métodos de Pago -->
             <li class="nav-item">
               <a class="nav-link {% if 'payment' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'payments:payment_methods_by_client' %}">
@@ -234,6 +261,12 @@
             </li>
             <li class="nav-item">
               <a class="nav-link" href="{% url 'usuarios:roles_list' %}">Roles</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'monedas:monedas_list' %}">Monedas</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'monedas:tasas_list' %}">Cotizaciones</a>
             </li>
           {% endif %}
         </ul>

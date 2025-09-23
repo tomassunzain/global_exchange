@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import SetPasswordForm
 from django.core.mail import send_mail
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -19,6 +20,7 @@ from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserFor
 from .models import Role, UserRole
 from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
+from monedas.models import TasaCambio, Moneda
 
 User = get_user_model()
 
@@ -38,12 +40,36 @@ def dashboard_view(request):
         usuarios_activos = User.objects.filter(is_active=True).count()
         total_roles = Role.objects.count()
         total_clientes = Cliente.objects.count()
+
+        monedas_activas = Moneda.objects.filter(
+            activa=True,
+            es_base=False
+        ).order_by('codigo')
+
+        ultimas_cotizaciones = []
+        for moneda in monedas_activas:
+            ultima_tasa = TasaCambio.objects.filter(
+                moneda=moneda,
+                activa=True
+            ).order_by('-fecha_creacion').first()
+
+            if ultima_tasa:
+                ultimas_cotizaciones.append(ultima_tasa)
+
+        # Obtener totales para las tarjetas
+        total_monedas = Moneda.objects.filter(activa=True).count()
+        total_cotizaciones = TasaCambio.objects.count()
+
         context.update({
             'total_usuarios': total_usuarios,
-            'total_clientes' : total_clientes,
+            'total_clientes': total_clientes,
             'usuarios_activos': usuarios_activos,
             'total_roles': total_roles,
+            'ultimas_cotizaciones': ultimas_cotizaciones,
+            'total_monedas': total_monedas,
+            'total_cotizaciones': total_cotizaciones,
         })
+
     return render(request, "dashboard.html", context)
 
 
