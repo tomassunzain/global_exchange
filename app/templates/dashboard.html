@@ -23,65 +23,7 @@
       </div>
     </div>
   </div>
-  
-  
-  <!-- SECCIÓN DE TASAS DE CAMBIO -->
-  <div class="card shadow mb-4">
-    <div class="card-header bg-primary text-white">
-      <h5 class="mb-0"> Tasas de Cambio</h5>
-    </div>
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>Moneda</th>
-              <th>Compra</th>
-              <th>Venta</th>
-              <th>Variación</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for tasa in tasas %}
-            <tr>
-              <td>
-                <strong>{{ tasa.moneda.codigo }}</strong>
-                <br>
-                <small class="text-muted">{{ tasa.moneda.nombre }}</small>
-              </td>
-              <td class="fw-bold text-success">
-                Gs. {{ tasa.compra }}
-              </td>
-              <td class="fw-bold text-danger">
-                Gs. {{ tasa.venta }}
-              </td>
-              <td>
-                {% if tasa.variacion > 0 %}
-                  <span class="text-success">▲ {{ tasa.variacion }}%</span>
-                {% elif tasa.variacion < 0 %}
-                  <span class="text-danger">▼ {{ tasa.variacion }}%</span>
-                {% else %}
-                  <span class="text-warning">→ {{ tasa.variacion }}%</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="4" class="text-center text-muted">
-                No hay tasas de cambio disponibles
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
 
-      <div class="mt-3 text-muted small">
-        <i class="bi bi-clock"></i>
-        Última actualización: {{ ultima_actualizacion_tasas|date:'d/m/Y H:i' }}
-      </div>
-    </div>
-  </div>
   <!-- Simulador de Conversiones -->
   <div class="row mb-4">
     <div class="col-12">
@@ -356,168 +298,137 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Animación para las tarjetas de estadísticas
-    const cards = document.querySelectorAll('.card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
+  // ===== Animación para las tarjetas de estadísticas =====
+  const cards = document.querySelectorAll('.card');
+  cards.forEach((card, index) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, index * 100);
+  });
 
-        setTimeout(() => {
-            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
+  // ===== Reloj en vivo =====
+  function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    const dateString = now.toLocaleDateString();
+    const timeElement = document.getElementById('current-time');
+    if (timeElement) timeElement.textContent = `${dateString} ${timeString}`;
+  }
+  setInterval(updateTime, 1000);
+  updateTime();
+
+  // ===== Hover en acciones rápidas =====
+  const quickActionCards = document.querySelectorAll('.btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-warning');
+  quickActionCards.forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-2px)';
+      this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
     });
-
-    // Actualizar la hora actual cada segundo
-    function updateTime() {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString();
-        const dateString = now.toLocaleDateString();
-
-        // Si existe un elemento para mostrar la hora
-        const timeElement = document.getElementById('current-time');
-        if (timeElement) {
-            timeElement.textContent = `${dateString} ${timeString}`;
-        }
-    }
-
-    // Actualizar cada segundo
-    setInterval(updateTime, 1000);
-    updateTime(); // Llamar inmediatamente
-
-    // Efecto hover para las tarjetas de acciones rápidas
-    const quickActionCards = document.querySelectorAll('.btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-warning');
-    quickActionCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px)';
-            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-        });
-
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = 'none';
-        });
+    card.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+      this.style.boxShadow = 'none';
     });
-    // Simulador de Conversiones dinámico
+  });
+
+  // ==========================
+  // Simulador de Conversiones
+  // ==========================
   const form = document.getElementById('simulador-form');
   const selectOrigen = document.getElementById('moneda-origen');
   const selectDestino = document.getElementById('moneda-destino');
   const inputMonto = document.getElementById('monto');
+  const errorDiv = document.getElementById('error-simulador');
+  const resultadoDiv = document.getElementById('resultado-simulador');
   let ratesMap = {};
 
-    // Cargar monedas y tasas desde el backend
-    fetch('/exchange/rates/')
-      .then(res => res.json())
-      .then(data => {
-        if (data.rates) {
-          // Obtener todas las monedas únicas
-          const monedas = Array.from(new Set(data.rates.flatMap(rate => [rate.currency, rate.base_currency].filter(Boolean))));
-          // Poblar selects una sola vez
-          monedas.forEach(moneda => {
-            const opt1 = document.createElement('option');
-            opt1.value = moneda;
-            opt1.textContent = moneda;
-            selectOrigen.appendChild(opt1);
-            const opt2 = document.createElement('option');
-            opt2.value = moneda;
-            opt2.textContent = moneda;
-            selectDestino.appendChild(opt2);
-          });
-          // Seleccionar por defecto PYG y USD
-          selectOrigen.value = 'PYG';
-          selectDestino.value = 'USD';
-          // Mapear tasas para acceso rápido
-          data.rates.forEach(rate => {
-            ratesMap[`${rate.currency}_${rate.base_currency}`] = {
-              buy: parseFloat(rate.buy),
-              sell: parseFloat(rate.sell)
-            };
-          });
-        }
-      });
+  function formatMontoInput() {
+    let value = inputMonto.value.replace(/\./g, '').replace(/,/g, '.');
+    if (!value) return;
+    let [entero, decimal=''] = value.split('.');
+    entero = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    inputMonto.value = decimal ? `${entero},${decimal}` : entero;
+  }
 
-    // Formatear el input de monto con puntos de miles para cualquier moneda
-    function formatMontoInput() {
-      let value = inputMonto.value.replace(/\./g, '').replace(/,/g, '.');
-      if (!value) return;
-      let partes = value.split('.');
-      let entero = partes[0];
-      let decimal = partes[1] || '';
-      entero = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-      inputMonto.value = decimal ? entero + ',' + decimal : entero;
-    }
+  function formatNumberCustom(num) {
+    if (typeof num !== 'number' || isNaN(num)) return num;
+    return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
-    if (inputMonto) {
-      inputMonto.addEventListener('input', formatMontoInput);
-    }
+  if (inputMonto) inputMonto.addEventListener('input', formatMontoInput);
 
-    function formatNumberCustom(num) {
-      if (typeof num !== 'number') return num;
-      return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+  // (Opcional) refresco automático cada 60s:
+  // setInterval(loadRatesAndRender, 60000);
 
-    if (form) {
-      const errorDiv = document.getElementById('error-simulador');
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        errorDiv.classList.add('d-none');
-        errorDiv.innerHTML = '';
-        // Quitar puntos y cambiar coma por punto para parsear
-        let rawMonto = inputMonto.value.replace(/\./g, '').replace(/,/g, '.');
-        const monto = parseFloat(rawMonto);
-        const origen = selectOrigen.value;
-        const destino = selectDestino.value;
-        let resultado = null;
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (errorDiv) { errorDiv.classList.add('d-none'); errorDiv.innerHTML = ''; }
 
-        if (origen === destino) {
-          const resultadoDiv = document.getElementById('resultado-simulador');
-          resultadoDiv.classList.remove('d-none', 'alert-success');
-          resultadoDiv.classList.add('alert-danger');
-          resultadoDiv.innerHTML = 'La moneda de origen no puede ser igual que la moneda de destino.';
-          return;
-        } else if (origen === 'PYG') {
-          // PYG a internacional: usar tasa sell de destino
-          let rate = ratesMap[`${destino}_PYG`];
-          resultado = rate ? monto / rate.sell : null;
-        } else if (destino === 'PYG') {
-          // Internacional a PYG: usar tasa buy de origen
-          let rate = ratesMap[`${origen}_PYG`];
-          resultado = rate ? monto * rate.buy : null;
-        } else {
-          // Internacional a internacional: SIEMPRE pasar por PYG
-          let rateOrigen = ratesMap[`${origen}_PYG`];
-          let rateDestino = ratesMap[`${destino}_PYG`];
-          if (rateOrigen && rateDestino) {
-            let montoEnPYG = monto * rateOrigen.buy;
-            resultado = montoEnPYG / rateDestino.sell;
-          } else {
-            resultado = null;
-          }
-        }
+      // Parseo del monto (puntos miles y coma decimal)
+      const rawMonto = inputMonto.value.replace(/\./g, '').replace(/,/g, '.');
+      const monto = parseFloat(rawMonto);
+      const origen = selectOrigen.value;
+      const destino = selectDestino.value;
 
-        const resultadoDiv = document.getElementById('resultado-simulador');
-        if (resultado !== null && !isNaN(resultado)) {
-          resultadoDiv.classList.remove('d-none', 'alert-danger');
-          resultadoDiv.classList.add('alert-success');
-          resultadoDiv.innerHTML = `<strong>Resultado:</strong> ${inputMonto.value} ${origen} = ${formatNumberCustom(resultado)} ${destino}`;
-        } else {
-          resultadoDiv.classList.remove('d-none', 'alert-success');
-          resultadoDiv.classList.add('alert-danger');
-          resultadoDiv.innerHTML = 'Conversión no válida.';
-        }
-      });
+      let resultado = null;
 
-      // Botón para alternar monedas
-      const swapBtn = document.getElementById('swap-monedas');
-      if (swapBtn) {
-        swapBtn.addEventListener('click', function() {
-          const temp = selectOrigen.value;
-          selectOrigen.value = selectDestino.value;
-          selectDestino.value = temp;
-        });
+      if (!isFinite(monto) || monto <= 0) {
+        resultadoDiv.classList.remove('d-none', 'alert-success');
+        resultadoDiv.classList.add('alert-danger');
+        resultadoDiv.innerHTML = 'Ingresá un monto válido.';
+        return;
       }
+
+      if (origen === destino) {
+        resultadoDiv.classList.remove('d-none', 'alert-success');
+        resultadoDiv.classList.add('alert-danger');
+        resultadoDiv.innerHTML = 'La moneda de origen no puede ser igual que la moneda de destino.';
+        return;
+      } else if (origen === 'PYG') {
+        // PYG → exterior: dividir por SELL destino
+        const rate = ratesMap[`${destino}_PYG`];
+        resultado = rate ? (monto / rate.sell) : null;
+      } else if (destino === 'PYG') {
+        // Exterior → PYG: multiplicar por BUY origen
+        const rate = ratesMap[`${origen}_PYG`];
+        resultado = rate ? (monto * rate.buy) : null;
+      } else {
+        // Exterior → Exterior: pasar por PYG
+        const rateOrigen  = ratesMap[`${origen}_PYG`];
+        const rateDestino = ratesMap[`${destino}_PYG`];
+        if (rateOrigen && rateDestino) {
+          const montoEnPYG = monto * rateOrigen.buy;
+          resultado = montoEnPYG / rateDestino.sell;
+        } else {
+          resultado = null;
+        }
+      }
+
+      if (resultado !== null && !isNaN(resultado)) {
+        resultadoDiv.classList.remove('d-none', 'alert-danger');
+        resultadoDiv.classList.add('alert-success');
+        resultadoDiv.innerHTML = `<strong>Resultado:</strong> ${inputMonto.value} ${origen} = ${formatNumberCustom(resultado)} ${destino}`;
+      } else {
+        resultadoDiv.classList.remove('d-none', 'alert-success');
+        resultadoDiv.classList.add('alert-danger');
+        resultadoDiv.innerHTML = 'Conversión no válida.';
+      }
+    });
+
+    // Botón swap
+    const swapBtn = document.getElementById('swap-monedas');
+    if (swapBtn) {
+      swapBtn.addEventListener('click', function() {
+        const tmp = selectOrigen.value;
+        selectOrigen.value = selectDestino.value;
+        selectDestino.value = tmp;
+      });
     }
+  }
 });
 </script>
 {% endblock %}

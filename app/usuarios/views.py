@@ -34,90 +34,18 @@ def dashboard_view(request):
     """
     context = {}
     if request.user.is_authenticated:
-        from django.db.models import Count
         total_usuarios = User.objects.count()
         usuarios_activos = User.objects.filter(is_active=True).count()
         total_roles = Role.objects.count()
         total_clientes = Cliente.objects.count()
-        tasas = [
-            {
-                "base_currency": "PYG",
-                "currency": "ARS",
-                "buy": "4.500000",
-                "sell": "5.600000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.964357Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "BRL",
-                "buy": "1310.000000",
-                "sell": "1350.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.961464Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "CLP",
-                "buy": "6.000000",
-                "sell": "10.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.970341Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "EUR",
-                "buy": "8250.000000",
-                "sell": "8750.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.967095Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "GBP",
-                "buy": "9500.000000",
-                "sell": "11000.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.973501Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "USD",
-                "buy": "7130.000000",
-                "sell": "7210.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.953558Z"
-            }
-        ]
-        # Adaptar para el template: crear objetos simples
-        from decimal import Decimal
-        tasas_obj = []
-        for d in tasas:
-            class MonedaSimple:
-                pass
-            m = MonedaSimple()
-            m.codigo = d.get('currency', '')
-            m.nombre = d.get('currency', '')
-            m.simbolo = d.get('currency', '')
-            m.decimales = 2
-            class TasaSimple:
-                pass
-            t = TasaSimple()
-            t.moneda = m
-            t.compra = Decimal(d.get('buy', '0'))
-            t.venta = Decimal(d.get('sell', '0'))
-            t.variacion = Decimal('0')
-            tasas_obj.append(t)
-        ultima_actualizacion_tasas = max(d.get('timestamp', '') for d in tasas if d.get('timestamp'))
         context.update({
             'total_usuarios': total_usuarios,
             'total_clientes' : total_clientes,
             'usuarios_activos': usuarios_activos,
             'total_roles': total_roles,
-            'tasas': tasas_obj,
-            'ultima_actualizacion_tasas': ultima_actualizacion_tasas
         })
     return render(request, "dashboard.html", context)
+
 
 @login_required
 @role_required("Admin")
@@ -132,6 +60,7 @@ def usuario_restore(request, user_id):
         messages.success(request, "Usuario restaurado correctamente.")
         return redirect("usuarios:usuarios_list")
     return render(request, "usuarios/usuario_restore_confirm.html", {"usuario": usuario})
+
 
 @login_required
 @role_required("Admin")

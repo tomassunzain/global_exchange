@@ -134,36 +134,30 @@
         </ul>
       </li>
 
-        <!-- Gestión de Monedas -->
-        <li class="nav-group {% if 'monedas' in request.resolver_match.app_name %}show{% endif %}">
-          <a class="nav-link nav-group-toggle" href="#">
-            <i class="nav-icon bi bi-cash-coin"></i>
-            Monedas
+      <!-- Gestión de Monedas -->
+    <li class="nav-group {% if 'monedas' in request.resolver_match.app_name %}show{% endif %}">
+      <a class="nav-link nav-group-toggle" href="#">
+        <i class="nav-icon bi bi-cash-coin"></i>
+        Monedas
+      </a>
+      <ul class="nav-group-items compact">
+        <!-- Monedas (ABM) -->
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'monedas_list' %}active{% endif %}"
+             href="{% url 'monedas:monedas_list' %}">
+            <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+            Lista de Monedas
           </a>
-          <ul class="nav-group-items compact">
-            <li class="nav-item">
-              <a class="nav-link {% if request.resolver_match.url_name == 'monedas_list' %}active{% endif %}"
-                 href="{% url 'monedas:monedas_list' %}">
-                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-                Lista de Monedas
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if request.resolver_match.url_name == 'moneda_create' %}active{% endif %}"
-                 href="{% url 'monedas:moneda_create' %}">
-                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-                Nueva Moneda
-              </a>
-            </li>
-          <li class="nav-item">
-              <a class="nav-link {% if request.resolver_match.url_name == 'moneda_create' %}active{% endif %}"
-                 href="{% url 'monedas:dashboard_tasas' %}">
-                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-                Tasas de Cambio
-              </a>
-            </li>
-          </ul>
         </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'moneda_create' %}active{% endif %}"
+             href="{% url 'monedas:moneda_create' %}">
+            <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+            Nueva Moneda
+          </a>
+        </li>
+      </ul>
+    </li>
 
         <!-- Configuración -->
         <li class="nav-title">Sistema</li>
