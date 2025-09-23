@@ -74,7 +74,6 @@ def dashboard_view(request):
 
 
 @login_required
-@role_required("Admin")
 def usuario_restore(request, user_id):
     """
     Vista para restaurar un usuario eliminado lógicamente.
@@ -89,7 +88,6 @@ def usuario_restore(request, user_id):
 
 
 @login_required
-@role_required("Admin")
 def usuario_create(request):
     """
     Vista para crear usuarios desde el panel de administración.
@@ -117,7 +115,6 @@ def usuario_create(request):
 
 
 @login_required
-@role_required("Admin")
 def usuarios_list(request):
     """
     Vista para listar usuarios registrados.
@@ -179,7 +176,6 @@ def usuarios_list(request):
 
 
 @login_required
-@role_required("Admin")
 def usuario_edit(request, user_id):
     """
     Vista para editar un usuario existente.
@@ -208,7 +204,6 @@ def usuario_edit(request, user_id):
 
 
 @login_required
-@role_required("Admin")
 def usuario_delete(request, user_id):
     """
     Vista para eliminar un usuario.
@@ -334,7 +329,6 @@ def logout_view(request):
 
 
 @login_required
-@role_required("Admin")
 def roles_list(request):
     """
     Vista para listar los roles (grupos) existentes.
@@ -355,30 +349,9 @@ def roles_list(request):
     return render(request, "usuarios/roles_list.html", {"roles": roles, "show_deleted": show_deleted})
 
 
-@login_required
-@role_required("Admin")
-def rol_create(request):
-    """
-    Vista para crear un nuevo rol en el sistema.
-
-    Muestra un formulario para ingresar el nombre y la descripción del rol.
-
-    :param request: HttpRequest
-    :return: HttpResponse con el formulario o redirección
-    """
-    if request.method == "POST":
-        form = RoleForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Rol creado exitosamente.")
-            return redirect("usuarios:roles_list")
-    else:
-        form = RoleForm()
-    return render(request, "usuarios/rol_form.html", {"form": form})
 
 
 @login_required
-@role_required("Admin")
 def rol_edit(request, role_id):
     """
    Vista para editar los permisos de un rol (grupo).
@@ -400,7 +373,6 @@ def rol_edit(request, role_id):
 
 
 @login_required
-@role_required("Admin")
 def rol_delete(request, role_id):
     """
     Vista para eliminar un rol del sistema.
@@ -428,7 +400,6 @@ def rol_delete(request, role_id):
     return render(request, "usuarios/rol_delete_confirm.html", {"role": role})
 
 @login_required
-@role_required("Admin")
 def role_restore(request, role_id):
     """
     Vista para restaurar un rol eliminado lógicamente.
@@ -442,7 +413,6 @@ def role_restore(request, role_id):
     return render(request, "usuarios/role_restore_confirm.html", {"role": role})
 
 @login_required
-@role_required("Admin")
 def asignar_rol_a_usuario(request, user_id):
     """
     Vista para asignar roles (grupos) a un usuario.
@@ -452,6 +422,10 @@ def asignar_rol_a_usuario(request, user_id):
     :return: HttpResponse con el formulario de asignación o redirección.
     """
     usuario = get_object_or_404(User, pk=user_id)
+
+    if not request.user.has_permission('roles.assign_to_user'):
+        messages.error(request, 'No tienes permisos para asignar roles a usuarios.')
+        return redirect('usuarios:usuarios_list')
 
     if request.method == "POST":
         form = AsignarRolForm(request.POST, user=usuario)
@@ -479,7 +453,6 @@ def asignar_rol_a_usuario(request, user_id):
 
 
 @login_required
-@role_required("Admin")
 def ver_usuario_roles(request, user_id):
     """Vista para ver los roles de un usuario específico"""
     usuario = get_object_or_404(User, pk=user_id)
@@ -491,7 +464,6 @@ def ver_usuario_roles(request, user_id):
     })
 
 @login_required
-@role_required("Admin")
 def asignar_clientes_a_usuario(request, user_id):
     """
     Vista para asignar clientes a un usuario específico.
@@ -501,6 +473,9 @@ def asignar_clientes_a_usuario(request, user_id):
     :return: HttpResponse con el formulario o redirección
     """
     usuario = get_object_or_404(User, pk=user_id)
+    if not request.user.has_permission('usuarios.asignar_clientes'):
+        messages.error(request, 'No tienes permisos para asignar clientes a usuarios.')
+        return redirect('usuarios:usuarios_list')
     if request.method == "POST":
         form = AsignarClientesAUsuarioForm(request.POST, usuario=usuario)
         if form.is_valid():

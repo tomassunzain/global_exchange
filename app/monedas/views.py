@@ -9,14 +9,13 @@ Incluye:
 """
 
 from decimal import Decimal
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
 from .forms import MonedaForm, TasaCambioForm
 from .models import Moneda, TasaCambio
-
+from usuarios.decorators import role_required
 
 @login_required
 def monedas_list(request):

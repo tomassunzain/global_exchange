@@ -1,4 +1,5 @@
 {% load static %}
+{% load usuarios_extras %}
 <!DOCTYPE html>
 <html lang="es" data-coreui-theme="auto">
 <head>
@@ -50,9 +51,11 @@
       </li>
 
       {% if request.user.is_authenticated %}
-        <!-- Gestión de Usuarios -->
-        <li class="nav-title">Gestión</li>
+  {% if request.user|has_any_permission:'usuarios.view,usuarios.create,usuarios.edit,usuarios.delete,roles.view,roles.create,roles.edit,roles.delete,clientes.list,clientes.create,clientes.edit,clientes.delete,comisiones.view,comisiones.create,monedas.view,monedas.create,monedas.edit,monedas.delete' %}
+          <li class="nav-title">Gestión</li>
+        {% endif %}
 
+        {% if request.user|has_permission:'usuarios.list' %}
         <li class="nav-group {% if 'usuarios' in request.resolver_match.url_name or 'usuario' in request.resolver_match.url_name %}show{% endif %}">
           <a class="nav-link nav-group-toggle" href="#">
             <i class="nav-icon bi bi-people"></i>
@@ -65,16 +68,19 @@
                 Lista de Usuarios
               </a>
             </li>
+            {% if request.user|has_permission:'usuarios.create' %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'usuarios:usuario_create' %}">
                 <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
                 Nuevo Usuario
               </a>
             </li>
+            {% endif %}
           </ul>
         </li>
+        {% endif %}
 
-        <!-- Gestión de Roles -->
+        {% if request.user|has_permission:'roles.list' %}
         <li class="nav-group {% if 'roles' in request.resolver_match.url_name or 'rol' in request.resolver_match.url_name %}show{% endif %}">
           <a class="nav-link nav-group-toggle" href="#">
             <i class="nav-icon bi bi-shield-check"></i>
@@ -87,12 +93,52 @@
                 Lista de Roles
               </a>
             </li>
+          </ul>
+        </li>
+        {% endif %}
+
+  {% if request.user|has_any_permission:'clientes.list,clientes.create,clientes.edit,clientes.delete,comisiones.list,comisiones.create' %}
+        <li class="nav-group {% if 'clientes' in request.resolver_match.app_name %}show{% endif %}">
+          <a class="nav-link nav-group-toggle" href="#">
+            <i class="nav-icon bi bi-building"></i>
+            Clientes
+          </a>
+          <ul class="nav-group-items compact">
+            {% if request.user|has_any_permission:'clientes.list,clientes.create,clientes.edit,clientes.delete' %}
             <li class="nav-item">
-              <a class="nav-link {% if request.resolver_match.url_name == 'rol_create' %}active{% endif %}" href="{% url 'usuarios:rol_create' %}">
+              <a class="nav-link {% if request.resolver_match.url_name == 'clientes_list' %}active{% endif %}"
+                href="{% url 'clientes:clientes_list' %}">
                 <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-                Nuevo Rol
+                Lista de Clientes
               </a>
             </li>
+            {% if request.user|has_permission:'clientes.create' %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'cliente_create' %}active{% endif %}"
+                href="{% url 'clientes:cliente_create' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Nuevo Cliente
+              </a>
+            </li>
+            {% endif %}
+            {% endif %}
+            {% if request.user|has_permission:'comisiones.list' %}
+            <li class="nav-item">
+              <a class="nav-link {% if 'comision' in request.resolver_match.app_name %}show{% endif %}" href="{% url 'clientes:comisiones_list' %}">
+                <span class="nav-icon"><i class="bi bi-percent"></i></span>
+                Tasas de Comisión
+              </a>
+            </li>
+            {% endif %}
+            {% if request.user|has_permission:'comisiones.create' %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'comision_create' %}active{% endif %}"
+                 href="{% url 'clientes:comision_create' %}">
+                <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                Nueva Tasa
+              </a>
+            </li>
+            {% endif %}
           </ul>
         </li>
 
@@ -208,12 +254,14 @@
             </li>
 
             <!-- Métodos de Pago -->
+            {% if request.user|has_permission:'payments.list_methods' %}
             <li class="nav-item">
               <a class="nav-link {% if 'payment' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'payments:payment_methods_by_client' %}">
                 <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
                 Métodos de Pago
               </a>
             </li>
+            {% endif %}
           </ul>
         </li>
 
