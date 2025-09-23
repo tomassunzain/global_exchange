@@ -7,7 +7,6 @@ from .forms import AsignarUsuariosAClienteForm, ClienteForm, TasaComisionForm
 from usuarios.decorators import role_required
 
 @login_required
-@role_required("Admin")
 def clientes_list(request):
     """
     Vista que muestra la lista de clientes registrados.
@@ -16,7 +15,10 @@ def clientes_list(request):
     Returns:
         HttpResponse con la lista de clientes.
     """
-        # Filtro para mostrar/ocultar eliminados
+    if not request.user.has_permission('clientes.list'):
+        messages.error(request, 'No tienes permisos para ver la lista de clientes.')
+        return redirect('usuarios:dashboard')
+    # Filtro para mostrar/ocultar eliminados
     show_deleted = request.GET.get('show_deleted', '0') == '1'
 
     # Consulta base
@@ -27,7 +29,6 @@ def clientes_list(request):
     return render(request, "clientes/clientes_list.html", {"clientes": clientes, "show_deleted": show_deleted})
 
 @login_required
-@role_required("Admin")
 def cliente_create(request):
     """
     Vista para crear un nuevo cliente.
@@ -47,7 +48,6 @@ def cliente_create(request):
     return render(request, "clientes/cliente_form.html", {"form": form})
 
 @login_required
-@role_required("Admin")
 def cliente_edit(request, cliente_id):
     """
     Vista para editar un cliente existente.
@@ -69,7 +69,6 @@ def cliente_edit(request, cliente_id):
     return render(request, "clientes/cliente_form.html", {"form": form, "cliente": cliente})
 
 @login_required
-@role_required("Admin")
 def cliente_delete(request, cliente_id):
     """
     Vista para eliminar un cliente.
@@ -88,7 +87,6 @@ def cliente_delete(request, cliente_id):
     return render(request, "clientes/cliente_delete_confirm.html", {"cliente": cliente})
 
 @login_required
-@role_required("Admin")
 def cliente_restore(request, cliente_id):
     """
     Vista para restaurar un cliente eliminado lógicamente.
@@ -102,7 +100,6 @@ def cliente_restore(request, cliente_id):
     return render(request, "clientes/cliente_restore_confirm.html", {"cliente": cliente})
 
 @login_required
-@role_required("Admin")
 def seleccionar_cliente(request, cliente_id):
     """
     Vista para seleccionar un cliente activo.
@@ -112,13 +109,15 @@ def seleccionar_cliente(request, cliente_id):
     Returns:
         HttpResponse redirigiendo al dashboard.
     """
+    if not request.user.has_permission('clientes.seleccionar'):
+        messages.error(request, "No tienes permiso para seleccionar cliente.")
+        return redirect("dashboard")
     cliente = get_object_or_404(Cliente, pk=cliente_id, usuarios=request.user)
     request.session["cliente_activo"] = cliente.id
     messages.success(request, f"Ahora estás operando como cliente: {cliente.nombre}")
     return redirect("dashboard")
 
 @login_required
-@role_required("Admin")
 def asignar_usuarios_a_cliente(request, cliente_id):
     """
     Vista para asignar usuarios a un cliente.
@@ -128,7 +127,10 @@ def asignar_usuarios_a_cliente(request, cliente_id):
     Returns:
         HttpResponse con el formulario o redirección.
     """
-    cliente= get_object_or_404(Cliente, pk=cliente_id)
+    cliente = get_object_or_404(Cliente, pk=cliente_id)
+    if not request.user.has_permission('clientes.asignar_usuarios'):
+        messages.error(request, 'No tienes permisos para asignar usuarios a clientes.')
+        return redirect('clientes:clientes_list')
     if request.method == "POST":
         form = AsignarUsuariosAClienteForm(request.POST, instance=cliente)
         if form.is_valid():
@@ -142,7 +144,6 @@ def asignar_usuarios_a_cliente(request, cliente_id):
 
 # ------- Listado -------
 @login_required
-@role_required("Admin")
 def comisiones_list(request):
     show_deleted = request.GET.get("show_deleted", "0") == "1"
     qs = TasaComision.objects.all().order_by("tipo_cliente", "-vigente_desde", "-id")
@@ -152,7 +153,6 @@ def comisiones_list(request):
 
 # ------- Crear -------
 @login_required
-@role_required("Admin")
 def comision_create(request):
     if request.method == "POST":
         form = TasaComisionForm(request.POST)
@@ -166,7 +166,6 @@ def comision_create(request):
 
 # ------- Editar -------
 @login_required
-@role_required("Admin")
 def comision_edit(request, pk):
     obj = get_object_or_404(TasaComision, pk=pk)
     if request.method == "POST":
@@ -181,7 +180,6 @@ def comision_edit(request, pk):
 
 # ------- Eliminar lógico -------
 @login_required
-@role_required("Admin")
 def comision_delete(request, pk):
     obj = get_object_or_404(TasaComision, pk=pk)
     if request.method == "POST":
@@ -193,7 +191,6 @@ def comision_delete(request, pk):
 
 # ------- Restaurar -------
 @login_required
-@role_required("Admin")
 def comision_restore(request, pk):
     obj = get_object_or_404(TasaComision, pk=pk)
     if request.method == "POST":
