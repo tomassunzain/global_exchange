@@ -3,6 +3,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from .models import PaymentMethod
+from commons.enums import PaymentTypeEnum
 from clientes.models import Cliente
 from django.contrib.auth import get_user_model
 
@@ -20,7 +21,7 @@ class PaymentMethodModelTest(TestCase):
 	def test_create_payment_method_cuenta_bancaria(self):
 		pm = PaymentMethod.objects.create(
 			cliente=self.cliente,
-			payment_type="cuenta_bancaria",
+			payment_type=PaymentTypeEnum.CUENTA_BANCARIA.value,
 			banco="Banco Test",
 			numero_cuenta="123456"
 		)
@@ -30,7 +31,7 @@ class PaymentMethodModelTest(TestCase):
 	def test_create_payment_method_billetera(self):
 		pm = PaymentMethod.objects.create(
 			cliente=self.cliente,
-			payment_type="billetera",
+			payment_type=PaymentTypeEnum.BILLETERA.value,
 			proveedor_billetera="PayPal",
 			billetera_email_telefono="mail@test.com"
 		)
@@ -39,7 +40,7 @@ class PaymentMethodModelTest(TestCase):
 	def test_create_payment_method_tarjeta(self):
 		pm = PaymentMethod.objects.create(
 			cliente=self.cliente,
-			payment_type="tarjeta",
+			payment_type=PaymentTypeEnum.TARJETA.value,
 			tarjeta_nombre="Test User",
 			tarjeta_numero="4111111111111111"
 		)
@@ -55,13 +56,13 @@ class PaymentMethodViewsTest(TestCase):
 		self.client.login(email="test@test.com", password="1234")
 		self.pm1 = PaymentMethod.objects.create(
 			cliente=self.cliente,
-			payment_type="cuenta_bancaria",
+			payment_type=PaymentTypeEnum.CUENTA_BANCARIA.value,
 			banco="Banco Test",
 			numero_cuenta="123456"
 		)
 		self.pm2 = PaymentMethod.objects.create(
 			cliente=self.cliente,
-			payment_type="billetera",
+			payment_type=PaymentTypeEnum.BILLETERA.value,
 			proveedor_billetera="PayPal",
 			billetera_email_telefono="mail@test.com"
 		)
@@ -75,7 +76,7 @@ class PaymentMethodViewsTest(TestCase):
 	def test_create_payment_method_view(self):
 		url = reverse('payments:paymentmethod_create') + f'?cliente={self.cliente.id}'
 		response = self.client.post(url, {
-			'payment_type': 'tarjeta',
+			'payment_type': PaymentTypeEnum.TARJETA.value,
 			'tarjeta_nombre': 'Test User',
 			'tarjeta_numero': '4111111111111111',
 			'tarjeta_vencimiento': '12/30',
@@ -90,7 +91,7 @@ class PaymentMethodViewsTest(TestCase):
 	def test_update_view(self):
 		url = reverse('payments:paymentmethod_update', args=[self.pm2.pk])
 		response = self.client.post(url, {
-			'payment_type': 'billetera',
+			'payment_type': PaymentTypeEnum.BILLETERA.value,
 			'proveedor_billetera': 'MercadoPago',
 			'billetera_email_telefono': 'nuevo@mail.com',
 		})
