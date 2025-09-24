@@ -14,7 +14,7 @@ class ExchangeRatesView(View):
 		- ?source=api para consumir la API externa
 		- ?source=local (o sin parámetro) para usar el mock local
 		"""
-		source = request.GET.get('source', 'api')
+		source = request.GET.get('source', 'local')
 
 		if source == 'api':
 			# --- CONSUMO DE API EXTERNA ---
@@ -33,12 +33,13 @@ class ExchangeRatesView(View):
 		# return JsonResponse({'info': 'Aquí iría la respuesta de la API externa. Descomenta el bloque correspondiente para activarlo.'})
 
 		# --- MODO LOCAL: LEE EL MOCK JSON ---
-		# json_path = os.path.join(settings.BASE_DIR, 'exchange', 'mock_data', 'mock_exchange_rates.json')
-		# try:
-		# 	with open(json_path, 'r', encoding='utf-8') as f:
-		# 		data = json.load(f)
-		# except Exception as e:
-		# 	return JsonResponse({'error': str(e)}, status=500)
-		# return JsonResponse({'rates': data})
+		else:
+			json_path = os.path.join(settings.BASE_DIR, 'exchange', 'mock_data', 'mock_exchange_rates.json')
+			try:
+				with open(json_path, 'r', encoding='utf-8') as f:
+					data = json.load(f)
+			except Exception as e:
+				return JsonResponse({'error': str(e)}, status=500)
+			return JsonResponse({'rates': data})
 
 

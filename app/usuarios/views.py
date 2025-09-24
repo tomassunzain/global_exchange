@@ -325,7 +325,7 @@ def logout_view(request):
     :return: Redirección a la página de login.
     """
     logout(request)
-    return redirect('usuarios:login')
+    return redirect('landing')
 
 
 @login_required
