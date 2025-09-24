@@ -3,8 +3,29 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils.dateparse import parse_datetime
 from .models import Moneda, TasaCambio
+import requests
+from django.conf import settings
 
 
+def obtener_tasas_desde_api():
+    """Consume la API de tu app exchange"""
+    try:
+        response = requests.get(
+            'http://localhost:8000/exchange/rates/',  # URL de tu API exchange
+            params={'source': 'api'},  # Para forzar API externa
+            timeout=10
+        )
+        response.raise_for_status()
+        return response.json()['rates']  # Ajusta según el formato de respuesta
+
+    except Exception as e:
+        # Fallback a mock local
+        response = requests.get(
+            'http://localhost:8000/exchange/rates/',
+            params={'source': 'local'},  # Usar mock
+            timeout=5
+        )
+        return response.json()['rates']
 def upsert_tasas_desde_payload(payload: list[dict[str, str]]):
     """
     payload: lista de dicts con keys: currency, buy, sell, base_currency, source, timestamp
@@ -58,3 +79,24 @@ def upsert_tasas_desde_payload(payload: list[dict[str, str]]):
             )
 
     return {'ok': True}
+
+
+def upsert_tasas_desde_api():
+    """Obtiene tasas desde la API y las guarda en BD"""
+    # Obtener datos de la API exchange
+    datos_api = obtener_tasas_desde_api()
+
+    # Transformar al formato que espera tu servicio
+    payload = []
+    for tasa in datos_api:
+        payload.append({
+            'currency': tasa['codigo_moneda'],
+            'buy': str(tasa['compra']),
+            'sell': str(tasa['venta']),
+            'base_currency': 'PYG',
+            'source': tasa.get('fuente', 'API Exchange'),
+            'timestamp': tasa.get('fecha_actualizacion')
+        })
+
+    # Usar tu servicio existente
+    return upsert_tasas_desde_payload(payload)
