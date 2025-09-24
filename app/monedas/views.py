@@ -17,6 +17,7 @@ from .forms import MonedaForm, TasaCambioForm
 from .models import Moneda, TasaCambio
 from usuarios.decorators import role_required
 
+
 @login_required
 def monedas_list(request):
     # Mostrar solo monedas activas usando el manager personalizado

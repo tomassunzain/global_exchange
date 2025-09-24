@@ -56,7 +56,7 @@ class MonedaForm(forms.ModelForm):
             raise ValidationError('Solo la moneda PYG puede ser moneda base del sistema.')
 
         return cleaned_data
-
+      
 
 class TasaCambioForm(forms.ModelForm):
     class Meta:

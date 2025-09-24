@@ -12,6 +12,42 @@ document.addEventListener('DOMContentLoaded', function() {
         endpoint += '?source=' + form.getAttribute('data-source');
     }
 
+    // ===== Animación para las tarjetas de estadísticas =====
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // ===== Reloj en vivo =====
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        const dateString = now.toLocaleDateString();
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) timeElement.textContent = `${dateString} ${timeString}`;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // ===== Hover en acciones rápidas =====
+    const quickActionCards = document.querySelectorAll('.btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-warning');
+    quickActionCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        });
+        card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
+        });
+    });
+
     fetch(endpoint)
         .then(res => res.json())
         .then(data => {
@@ -136,4 +172,5 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+    
 });
