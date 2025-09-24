@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import SetPasswordForm
 from django.core.mail import send_mail
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -19,6 +20,7 @@ from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserFor
 from .models import Role, UserRole
 from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
+from monedas.models import TasaCambio, Moneda
 
 User = get_user_model()
 
@@ -34,90 +36,42 @@ def dashboard_view(request):
     """
     context = {}
     if request.user.is_authenticated:
-        from django.db.models import Count
         total_usuarios = User.objects.count()
         usuarios_activos = User.objects.filter(is_active=True).count()
         total_roles = Role.objects.count()
         total_clientes = Cliente.objects.count()
-        tasas = [
-            {
-                "base_currency": "PYG",
-                "currency": "ARS",
-                "buy": "4.500000",
-                "sell": "5.600000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.964357Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "BRL",
-                "buy": "1310.000000",
-                "sell": "1350.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.961464Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "CLP",
-                "buy": "6.000000",
-                "sell": "10.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.970341Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "EUR",
-                "buy": "8250.000000",
-                "sell": "8750.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.967095Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "GBP",
-                "buy": "9500.000000",
-                "sell": "11000.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.973501Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "USD",
-                "buy": "7130.000000",
-                "sell": "7210.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.953558Z"
-            }
-        ]
-        # Adaptar para el template: crear objetos simples
-        from decimal import Decimal
-        tasas_obj = []
-        for d in tasas:
-            class MonedaSimple:
-                pass
-            m = MonedaSimple()
-            m.codigo = d.get('currency', '')
-            m.nombre = d.get('currency', '')
-            m.simbolo = d.get('currency', '')
-            m.decimales = 2
-            class TasaSimple:
-                pass
-            t = TasaSimple()
-            t.moneda = m
-            t.compra = Decimal(d.get('buy', '0'))
-            t.venta = Decimal(d.get('sell', '0'))
-            t.variacion = Decimal('0')
-            tasas_obj.append(t)
-        ultima_actualizacion_tasas = max(d.get('timestamp', '') for d in tasas if d.get('timestamp'))
+
+        monedas_activas = Moneda.objects.filter(
+            activa=True,
+            es_base=False
+        ).order_by('codigo')
+
+        ultimas_cotizaciones = []
+        for moneda in monedas_activas:
+            ultima_tasa = TasaCambio.objects.filter(
+                moneda=moneda,
+                activa=True
+            ).order_by('-fecha_creacion').first()
+
+            if ultima_tasa:
+                ultimas_cotizaciones.append(ultima_tasa)
+
+        # Obtener totales para las tarjetas
+        total_monedas = Moneda.objects.filter(activa=True).count()
+        total_cotizaciones = TasaCambio.objects.count()
+
         context.update({
             'total_usuarios': total_usuarios,
-            'total_clientes' : total_clientes,
+            'total_clientes': total_clientes,
             'usuarios_activos': usuarios_activos,
             'total_roles': total_roles,
-            'tasas': tasas_obj,
-            'ultima_actualizacion_tasas': ultima_actualizacion_tasas
+            'ultimas_cotizaciones': ultimas_cotizaciones,
+            'total_monedas': total_monedas,
+            'total_cotizaciones': total_cotizaciones,
         })
+
     return render(request, "dashboard.html", context)
+
 
 @login_required
 def usuario_restore(request, user_id):
@@ -131,6 +85,7 @@ def usuario_restore(request, user_id):
         messages.success(request, "Usuario restaurado correctamente.")
         return redirect("usuarios:usuarios_list")
     return render(request, "usuarios/usuario_restore_confirm.html", {"usuario": usuario})
+
 
 @login_required
 def usuario_create(request):

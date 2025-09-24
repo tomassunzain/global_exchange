@@ -14,7 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.admin","django.contrib.auth","django.contrib.contenttypes",
     "django.contrib.sessions","django.contrib.messages","django.contrib.staticfiles",
     "widget_tweaks",
-    "usuarios","clientes","commons","payments","monedas"
+    "usuarios","clientes","commons","payments","monedas","medios_acreditacion"
 ]
 
 AUTH_USER_MODEL = "usuarios.User"
@@ -72,7 +72,13 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+from glob import glob
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+# Agregar automáticamente todas las carpetas static de apps dentro de /app
+for static_dir in glob(str(BASE_DIR / "app" / "*" / "static")):
+    STATICFILES_DIRS.append(static_dir)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

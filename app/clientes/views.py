@@ -151,6 +151,7 @@ def comisiones_list(request):
         qs = qs.filter(estado=EstadoRegistroEnum.ACTIVO.value)
     return render(request, "clientes/comisiones_list.html", {"items": qs, "show_deleted": show_deleted})
 
+
 # ------- Crear -------
 @login_required
 def comision_create(request):
@@ -158,11 +159,12 @@ def comision_create(request):
         form = TasaComisionForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Tasa de comisión creada.")
+            messages.success(request, "Tasa de descuento creada.")
             return redirect("clientes:comisiones_list")
     else:
         form = TasaComisionForm()
     return render(request, "clientes/comision_form.html", {"form": form})
+
 
 # ------- Editar -------
 @login_required
@@ -172,11 +174,12 @@ def comision_edit(request, pk):
         form = TasaComisionForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
-            messages.success(request, "Tasa de comisión actualizada.")
+            messages.success(request, "Tasa de descuento actualizada.")
             return redirect("clientes:comisiones_list")
     else:
         form = TasaComisionForm(instance=obj)
     return render(request, "clientes/comision_form.html", {"form": form, "obj": obj})
+
 
 # ------- Eliminar lógico -------
 @login_required
@@ -185,9 +188,10 @@ def comision_delete(request, pk):
     if request.method == "POST":
         obj.estado = EstadoRegistroEnum.ELIMINADO.value
         obj.save()
-        messages.success(request, "Tasa de comisión eliminada lógicamente.")
+        messages.success(request, "Tasa de descuento eliminada lógicamente.")
         return redirect("clientes:comisiones_list")
     return render(request, "clientes/comision_delete_confirm.html", {"obj": obj})
+
 
 # ------- Restaurar -------
 @login_required
@@ -196,6 +200,6 @@ def comision_restore(request, pk):
     if request.method == "POST":
         obj.estado = EstadoRegistroEnum.ACTIVO.value
         obj.save()
-        messages.success(request, "Tasa de comisión restaurada.")
+        messages.success(request, "Tasa de descuento restaurada.")
         return redirect("clientes:comisiones_list")
     return render(request, "clientes/comision_restore_confirm.html", {"obj": obj})
