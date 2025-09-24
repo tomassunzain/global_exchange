@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<div class="container mt-4">
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li><strong>
+                            {% if field == 'titular_cuenta' %}Nombre del titular
+                            {% elif field == 'tipo_cuenta' %}Tipo de cuenta
+                            {% elif field == 'banco' %}Banco
+                            {% elif field == 'numero_cuenta' %}Número de cuenta o IBAN
+                            {% elif field == 'proveedor_billetera' %}Proveedor
+                            {% elif field == 'billetera_email_telefono' %}Email o teléfono asociado
+                            {% elif field == 'billetera_titular' %}Nombre del titular (opcional)
+                            {% else %}{{ field|capfirst }}
+                            {% endif %}
+                        :</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if cliente is None %}
+            <div class="alert alert-warning">
+                <strong>Atención:</strong> No se pudo asociar el cliente. El registro no se guardará.<br>
+                Verifica que el parámetro <code>?cliente=ID</code> esté presente en la URL y que el usuario esté vinculado al cliente.
+            </div>
+        {% endif %}
+    <h2>{% if medio %}Editar{% else %}Nuevo{% endif %} Medio de Acreditación</h2>
+    <form method="post">
+        {% if cliente %}
+            <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+        {% endif %}
+        {% csrf_token %}
+        {% if cliente %}
+            <div class="mb-3">
+                <label class="form-label fw-bold">Cliente</label>
+                <input type="text" class="form-control" value="{{ cliente.nombre }}" readonly>
+            </div>
+        {% endif %}
+        <div class="mb-3">
+            <label for="id_tipo_medio" class="form-label fw-bold">Tipo de Medio de Acreditación</label>
+            {% if medio %}
+                <input type="text" class="form-control" value="{{ medio.get_tipo_medio_display }}" readonly>
+                <input type="hidden" name="tipo_medio" value="{{ medio.tipo_medio }}">
+            {% else %}
+                {{ form.tipo_medio }}
+            {% endif %}
+        </div>
+        <div id="campos-cuenta" style="display:none;">
+            <div class="mb-3">
+                <label class="form-label">Nombre del titular</label>
+                {{ form.titular_cuenta }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tipo de cuenta</label>
+                {{ form.tipo_cuenta }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Banco</label>
+                {{ form.banco }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Número de cuenta o IBAN</label>
+                {{ form.numero_cuenta }}
+            </div>
+        </div>
+        <div id="campos-billetera" style="display:none;">
+            <div class="mb-3">
+                <label class="form-label">Proveedor</label>
+                {{ form.proveedor_billetera }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email o teléfono asociado</label>
+                {{ form.billetera_email_telefono }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Nombre del titular (opcional)</label>
+                {{ form.billetera_titular }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success">Guardar</button>
+        <a href="{% url 'medios_acreditacion:medios_by_client' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+    <script src="{% static 'medios_acreditacion/medioacreditacion_form.js' %}"></script>
+</div>
+{% endblock %}

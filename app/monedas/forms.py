@@ -56,3 +56,36 @@ class MonedaForm(forms.ModelForm):
             raise ValidationError('Solo la moneda PYG puede ser moneda base del sistema.')
 
         return cleaned_data
+      
+
+class TasaCambioForm(forms.ModelForm):
+    class Meta:
+        model = TasaCambio
+        fields = ['moneda', 'compra', 'venta', 'fuente', 'ts_fuente', 'activa']
+        labels = {
+            'moneda': 'Moneda',
+            'compra': 'Compra',
+            'venta': 'Venta',
+            'fuente': 'Fuente',
+            'ts_fuente': 'Timestamp de la fuente (opcional)'
+        }
+        widgets = {
+            'moneda': forms.Select(attrs={'class': 'form-select'}),
+            'compra': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
+            'venta': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
+            'fuente': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Banco X / Manual / API'}),
+            'ts_fuente': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Sólo monedas NO base y activas
+        self.fields['moneda'].queryset = Moneda.objects.all().filter(activa=True, es_base=False)
+
+    def clean(self):
+        cleaned = super().clean()
+        compra = cleaned.get('compra')
+        venta = cleaned.get('venta')
+        if compra and venta and venta < compra:
+            raise ValidationError('El precio de venta no puede ser menor al de compra.')
+        return cleaned

@@ -54,7 +54,7 @@ class TasaComisionForm(forms.ModelForm):
                 "class": "form-control",
                 "step": "0.001",
                 "min": "0",
-                "placeholder": "Ej: 2.500"
+                "placeholder": "Ej: 2.500  (descuento %)"
             }),
             "vigente_desde": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "vigente_hasta": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
@@ -62,7 +62,7 @@ class TasaComisionForm(forms.ModelForm):
         }
         labels = {
             "tipo_cliente": "Segmento",
-            "porcentaje": "Porcentaje (%)",
+            "porcentaje": "Descuento (%)",
             "vigente_desde": "Vigente desde",
             "vigente_hasta": "Vigente hasta",
             "estado": "Estado",
@@ -70,5 +70,4 @@ class TasaComisionForm(forms.ModelForm):
 
     def clean_porcentaje(self):
         v = self.cleaned_data["porcentaje"]
-        # Normaliza coma/decimal si te vienen strings; Django ya valida Decimal en general
         return v

@@ -13,8 +13,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
-from .forms import MonedaForm
-from .models import Moneda
+from .forms import MonedaForm, TasaCambioForm
+from .models import Moneda, TasaCambio
+from usuarios.decorators import role_required
 
 
 @login_required
@@ -96,3 +97,89 @@ def monedas_inactivas(request):
             return redirect('monedas:monedas_list')
 
     return render(request, 'monedas/monedas_inactivas.html', {'monedas': monedas_inactivas})
+
+
+@login_required
+def tasas_list(request):
+    """Listado con filtro por moneda y por estado (activa/todas)."""
+    moneda_id = request.GET.get('moneda')
+    solo_activas = request.GET.get('solo_activas') == '1'
+
+    qs = TasaCambio.objects.select_related('moneda').all().order_by('-fecha_creacion')
+    if moneda_id:
+        qs = qs.filter(moneda_id=moneda_id)
+    if solo_activas:
+        qs = qs.filter(activa=True)
+
+    monedas = Moneda.objects.all().filter(activa=True, es_base=False).order_by('codigo')
+    ctx = {
+        'tasas': qs,
+        'monedas': monedas,
+        'moneda_id': moneda_id or '',
+        'solo_activas': solo_activas,
+    }
+    return render(request, 'monedas/tasas_list.html', ctx)
+
+
+@login_required
+@transaction.atomic
+def tasa_create(request):
+    form = TasaCambioForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            # Crear instancia y forzar activa=True
+            tasa = form.save(commit=False)
+            tasa.es_automatica = False
+            tasa.activa = True  # ✅ Siempre activa al crear
+
+            tasa.save()  # ✅ El save() del modelo manejará la desactivación de otras
+
+            messages.success(request, 'Tasa de cambio creada correctamente.')
+            return redirect('monedas:tasas_list')
+
+        except Exception as e:
+            messages.error(request, f'No se pudo crear la tasa: {e}')
+    return render(request, 'monedas/tasa_form.html', {'form': form})
+
+
+@login_required
+@transaction.atomic
+def tasa_edit(request, tasa_id):
+    tasa = get_object_or_404(TasaCambio, pk=tasa_id)
+    if request.method == 'POST':
+        form = TasaCambioForm(request.POST, instance=tasa)
+        if form.is_valid():
+            try:
+                # Al editar, mantener el estado activo actual
+                tasa = form.save(commit=False)
+                tasa.save()  # ✅ El save() del modelo mantiene la lógica de activación
+
+                messages.success(request, 'Tasa de cambio actualizada.')
+                return redirect('monedas:tasas_list')
+            except Exception as e:
+                messages.error(request, f'No se pudo actualizar la tasa: {e}')
+    else:
+        form = TasaCambioForm(instance=tasa)
+    return render(request, 'monedas/tasa_form.html', {'form': form, 'tasa': tasa})
+
+
+@login_required
+@transaction.atomic
+def tasa_delete(request, tasa_id):
+    tasa = get_object_or_404(TasaCambio, pk=tasa_id)
+    if request.method == 'POST':
+        tasa.delete()
+        messages.success(request, 'Tasa de cambio eliminada.')
+        return redirect('monedas:tasas_list')
+    return render(request, 'monedas/tasa_delete_confirm.html', {'tasa': tasa})
+
+
+@login_required
+@transaction.atomic
+def tasa_marcar_activa(request, tasa_id):
+    """Acción rápida para activar una tasa y desactivar las demás de la misma moneda."""
+    tasa = get_object_or_404(TasaCambio, pk=tasa_id)
+    tasa.activa = True
+    tasa.save()  # el save del modelo desactiva las demás
+    messages.success(request, f'Tasa {tasa.id} marcada como activa para {tasa.moneda.codigo}.')
+    return redirect('monedas:tasas_list')

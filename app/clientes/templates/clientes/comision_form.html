@@ -3,7 +3,7 @@
 {% block title %}{% if obj %}Editar{% else %}Nueva{% endif %} Tasa{% endblock %}
 
 {% block content %}
-<h1 class="h4 mb-3">{% if obj %}Editar{% else %}Nueva{% endif %} Tasa de Comisión</h1>
+<h1 class="h4 mb-3">{% if obj %}Editar{% else %}Nueva{% endif %} Tasa de Descuento</h1>
 
 <form method="post" class="card p-3">
   {% csrf_token %}
@@ -15,7 +15,7 @@
     </div>
 
     <div class="col-md-3">
-      <label class="form-label">% Comisión</label>
+      <label class="form-label">% Descuento</label>
       {{ form.porcentaje }}
       {{ form.porcentaje.errors }}
     </div>

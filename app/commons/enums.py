@@ -1,7 +1,12 @@
+
+from enum import Enum
 """
 Definición de enumeraciones utilizadas en la aplicación.
 """
-from enum import Enum
+
+class TipoMedioAcreditacionEnum(Enum):
+	CUENTA_BANCARIA = "cuenta_bancaria"
+	BILLETERA = "billetera"
 
 
 class EstadoRegistroEnum(Enum):

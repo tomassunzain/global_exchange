@@ -40,7 +40,7 @@ class Cliente(models.Model):
 
 class TasaComision(models.Model):
     """
-    % de comisión por segmento (Cliente.SEGMENTOS) con vigencia (desde/hasta).
+    % de DESCUENTO por segmento (Cliente.SEGMENTOS) con vigencia (desde/hasta).
     Se evita el solapamiento de rangos por tipo_cliente cuando el registro está ACTIVO.
     """
     estado = models.CharField(
@@ -53,12 +53,13 @@ class TasaComision(models.Model):
     tipo_cliente = models.CharField(
         max_length=10,
         choices=Cliente.SEGMENTOS,
-        help_text="Segmento al que aplica la comisión (MIN, CORP, VIP)."
+        help_text="Segmento al que aplica el descuento (MIN, CORP, VIP)."
     )
 
+    # AHORA ES DESCUENTO
     porcentaje = models.DecimalField(
         max_digits=6, decimal_places=3,
-        help_text="Porcentaje de comisión. Ej: 2.5 = 2,5 %."
+        help_text="Porcentaje de descuento. Ej: 2.5 = 2,5 %."
     )
 
     vigente_desde = models.DateField(help_text="Inclusive")
@@ -68,8 +69,8 @@ class TasaComision(models.Model):
     actualizado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Tasa de comisión"
-        verbose_name_plural = "Tasas de comisión"
+        verbose_name = "Tasa de descuento"
+        verbose_name_plural = "Tasas de descuento"
         indexes = [
             models.Index(fields=["tipo_cliente", "vigente_desde"]),
             models.Index(fields=["estado"]),
@@ -82,7 +83,7 @@ class TasaComision(models.Model):
             rango += f" - {self.vigente_hasta:%d/%m/%Y}"
         else:
             rango += " en adelante"
-        return f"{self.get_tipo_cliente_display()}: {self.porcentaje}% ({rango})"
+        return f"{self.get_tipo_cliente_display()}: {self.porcentaje}% desc. ({rango})"
 
     # -------- Helpers --------
     @staticmethod
@@ -90,13 +91,27 @@ class TasaComision(models.Model):
         from datetime import date
         return date(9999, 12, 31)
 
+    @property
+    def factor_descuento(self) -> Decimal:
+        """
+        Devuelve el factor multiplicativo (1 - p/100). Ej: 2.5% -> 0.975
+        """
+        from decimal import Decimal
+        return Decimal("1") - (self.porcentaje / Decimal("100"))
+
+    def aplicar_descuento(self, monto: Decimal) -> Decimal:
+        """
+        Aplica el descuento al monto recibido.
+        """
+        return (monto * self.factor_descuento).quantize(monto.as_tuple().exponent)
+
     def clean(self):
         # Rango lógico
         if self.vigente_hasta and self.vigente_hasta < self.vigente_desde:
             raise ValidationError("La fecha 'Hasta' no puede ser menor a 'Desde'.")
 
         if self.porcentaje < Decimal("0") or self.porcentaje > Decimal("100"):
-            raise ValidationError("El porcentaje debe estar entre 0 y 100.")
+            raise ValidationError("El porcentaje de descuento debe estar entre 0 y 100.")
 
         # Evitar solapamientos (solo contra ACTIVO)
         if self.estado == EstadoRegistroEnum.ACTIVO.value:
@@ -122,7 +137,7 @@ class TasaComision(models.Model):
     @classmethod
     def vigente_para_tipo(cls, tipo_cliente, fecha=None):
         """
-        Devuelve la tasa vigente (o None) para un tipo de cliente en 'fecha'.
+        Devuelve la tasa de descuento vigente (o None) para un tipo de cliente en 'fecha'.
         """
         from datetime import date
         fecha = fecha or date.today()
