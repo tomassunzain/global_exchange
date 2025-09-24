@@ -2,15 +2,13 @@
 {% load static %}
 
 {% block title %}
-  {% if role %}Editar Rol - {{ role.name }}{% else %}Nuevo Rol{% endif %}
+  Editar Rol - {{ role.name }}
 {% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'usuarios:dashboard' %}">Inicio</a>
 <a href="{% url 'usuarios:roles_list' %}" class="breadcrumb-item">Roles</a>
-<span class="breadcrumb-item active">
-  {% if role %}Editar Rol{% else %}Nuevo Rol{% endif %}
-</span>
+<span class="breadcrumb-item active">Editar Rol</span>
 {% endblock %}
 
 {% block content %}
@@ -20,11 +18,7 @@
       <div class="card">
         <div class="card-header">
           <strong>
-            {% if role %}
-              <i class="bi bi-pencil"></i> Editar Rol: {{ role.name }}
-            {% else %}
-              <i class="bi bi-plus-lg"></i> Crear Nuevo Rol
-            {% endif %}
+            <i class="bi bi-pencil"></i> Editar Rol: {{ role.name }}
           </strong>
           <div class="card-header-actions">
             <a href="{% url 'usuarios:roles_list' %}" class="btn btn-sm btn-secondary">
@@ -66,52 +60,70 @@
                 </div>
               {% endif %}
               <div class="form-text">
-                Descripción detallada de los permisos y funciones de este rol
+                Descripción detallada del Rol
               </div>
             </div>
-
-            {% if role %}
-              <!-- Información adicional para roles existentes -->
-              <div class="row mb-4">
-                <div class="col-md-6">
-                  <div class="card border-info">
-                    <div class="card-body">
-                      <h6 class="card-title">
-                        <i class="bi bi-info-circle text-info"></i>
-                        Información del Rol
-                      </h6>
-                      <p class="card-text">
-                        <strong>Usuarios asignados:</strong> 
-                        <span class="badge bg-primary">{{ role.user_roles.count }}</span>
-                      </p>
-                      {% if role.user_roles.count > 0 %}
-                        <small class="text-muted">
-                          <strong>Usuarios:</strong>
-                          {% for user_role in role.user_roles.all|slice:":5" %}
-                            {{ user_role.user.email }}{% if not forloop.last %}, {% endif %}
-                          {% endfor %}
-                          {% if role.user_roles.count > 5 %}
-                            y {{ role.user_roles.count|add:"-5" }} más...
-                          {% endif %}
-                        </small>
-                      {% endif %}
-                    </div>
+            <div class="mb-3">
+              <label class="form-label"><strong>Permisos asignados</strong></label>
+              <div style="max-height: 220px; min-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafbfc;">
+                <style>
+                  .permisos-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 0.5rem 1.5rem;
+                  }
+                  .permisos-grid li {
+                    list-style: none;
+                    margin-bottom: 0.2rem;
+                  }
+                </style>
+                <ul class="permisos-grid">
+                  {% for checkbox in form.permissions %}
+                    <li>{{ checkbox.tag }} {{ checkbox.choice_label }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% if form.permissions.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.permissions.errors.0 }}
+                </div>
+              {% endif %}
+              <div class="form-text mb-3">
+                Selecciona los permisos que tendrá este rol.
+              </div>
+              {% if role %}
+                <div class="card border-info mb-3">
+                  <div class="card-body">
+                    <h6 class="card-title">
+                      <i class="bi bi-info-circle text-info"></i>
+                      Información del Rol
+                    </h6>
+                    <p class="card-text">
+                      <strong>Usuarios asignados:</strong>
+                      <span class="badge bg-primary">{{ role.user_roles.count }}</span>
+                    </p>
+                    {% if role.user_roles.count > 0 %}
+                      <small class="text-muted">
+                        <strong>Usuarios:</strong>
+                        {% for user_role in role.user_roles.all|slice:":5" %}
+                          {{ user_role.user.email }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                        {% if role.user_roles.count > 5 %}
+                          y {{ role.user_roles.count|add:"-5" }} más...
+                        {% endif %}
+                      </small>
+                    {% endif %}
                   </div>
                 </div>
-              </div>
-            {% endif %}
-
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">
-                {% if role %}
+              {% endif %}
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
                   <i class="bi bi-check-lg"></i> Actualizar Rol
-                {% else %}
-                  <i class="bi bi-plus-lg"></i> Crear Rol
-                {% endif %}
-              </button>
-              <a href="{% url 'usuarios:roles_list' %}" class="btn btn-secondary">
-                <i class="bi bi-x-lg"></i> Cancelar
-              </a>
+                </button>
+                <a href="{% url 'usuarios:roles_list' %}" class="btn btn-secondary">
+                  <i class="bi bi-x-lg"></i> Cancelar
+                </a>
+              </div>
             </div>
           </form>
         </div>

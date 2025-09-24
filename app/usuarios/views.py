@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import SetPasswordForm
 from django.core.mail import send_mail
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -19,6 +20,7 @@ from .forms import AsignarClientesAUsuarioForm, RegistroForm, LoginForm, UserFor
 from .models import Role, UserRole
 from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
+from monedas.models import TasaCambio, Moneda
 
 User = get_user_model()
 
@@ -34,93 +36,44 @@ def dashboard_view(request):
     """
     context = {}
     if request.user.is_authenticated:
-        from django.db.models import Count
         total_usuarios = User.objects.count()
         usuarios_activos = User.objects.filter(is_active=True).count()
         total_roles = Role.objects.count()
         total_clientes = Cliente.objects.count()
-        tasas = [
-            {
-                "base_currency": "PYG",
-                "currency": "ARS",
-                "buy": "4.500000",
-                "sell": "5.600000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.964357Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "BRL",
-                "buy": "1310.000000",
-                "sell": "1350.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.961464Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "CLP",
-                "buy": "6.000000",
-                "sell": "10.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.970341Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "EUR",
-                "buy": "8250.000000",
-                "sell": "8750.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.967095Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "GBP",
-                "buy": "9500.000000",
-                "sell": "11000.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.973501Z"
-            },
-            {
-                "base_currency": "PYG",
-                "currency": "USD",
-                "buy": "7130.000000",
-                "sell": "7210.000000",
-                "source": "Cambios Chaco",
-                "timestamp": "2025-09-15T14:22:53.953558Z"
-            }
-        ]
-        # Adaptar para el template: crear objetos simples
-        from decimal import Decimal
-        tasas_obj = []
-        for d in tasas:
-            class MonedaSimple:
-                pass
-            m = MonedaSimple()
-            m.codigo = d.get('currency', '')
-            m.nombre = d.get('currency', '')
-            m.simbolo = d.get('currency', '')
-            m.decimales = 2
-            class TasaSimple:
-                pass
-            t = TasaSimple()
-            t.moneda = m
-            t.compra = Decimal(d.get('buy', '0'))
-            t.venta = Decimal(d.get('sell', '0'))
-            t.variacion = Decimal('0')
-            tasas_obj.append(t)
-        ultima_actualizacion_tasas = max(d.get('timestamp', '') for d in tasas if d.get('timestamp'))
+
+        monedas_activas = Moneda.objects.filter(
+            activa=True,
+            es_base=False
+        ).order_by('codigo')
+
+        ultimas_cotizaciones = []
+        for moneda in monedas_activas:
+            ultima_tasa = TasaCambio.objects.filter(
+                moneda=moneda,
+                activa=True
+            ).order_by('-fecha_creacion').first()
+
+            if ultima_tasa:
+                ultimas_cotizaciones.append(ultima_tasa)
+
+        # Obtener totales para las tarjetas
+        total_monedas = Moneda.objects.filter(activa=True).count()
+        total_cotizaciones = TasaCambio.objects.count()
+
         context.update({
             'total_usuarios': total_usuarios,
-            'total_clientes' : total_clientes,
+            'total_clientes': total_clientes,
             'usuarios_activos': usuarios_activos,
             'total_roles': total_roles,
-            'tasas': tasas_obj,
-            'ultima_actualizacion_tasas': ultima_actualizacion_tasas
+            'ultimas_cotizaciones': ultimas_cotizaciones,
+            'total_monedas': total_monedas,
+            'total_cotizaciones': total_cotizaciones,
         })
+
     return render(request, "dashboard.html", context)
 
+
 @login_required
-@role_required("Admin")
 def usuario_restore(request, user_id):
     """
     Vista para restaurar un usuario eliminado lógicamente.
@@ -133,8 +86,8 @@ def usuario_restore(request, user_id):
         return redirect("usuarios:usuarios_list")
     return render(request, "usuarios/usuario_restore_confirm.html", {"usuario": usuario})
 
+
 @login_required
-@role_required("Admin")
 def usuario_create(request):
     """
     Vista para crear usuarios desde el panel de administración.
@@ -162,7 +115,6 @@ def usuario_create(request):
 
 
 @login_required
-@role_required("Admin")
 def usuarios_list(request):
     """
     Vista para listar usuarios registrados.
@@ -224,7 +176,6 @@ def usuarios_list(request):
 
 
 @login_required
-@role_required("Admin")
 def usuario_edit(request, user_id):
     """
     Vista para editar un usuario existente.
@@ -253,7 +204,6 @@ def usuario_edit(request, user_id):
 
 
 @login_required
-@role_required("Admin")
 def usuario_delete(request, user_id):
     """
     Vista para eliminar un usuario.
@@ -375,11 +325,10 @@ def logout_view(request):
     :return: Redirección a la página de login.
     """
     logout(request)
-    return redirect('usuarios:login')
+    return redirect('landing')
 
 
 @login_required
-@role_required("Admin")
 def roles_list(request):
     """
     Vista para listar los roles (grupos) existentes.
@@ -400,30 +349,9 @@ def roles_list(request):
     return render(request, "usuarios/roles_list.html", {"roles": roles, "show_deleted": show_deleted})
 
 
-@login_required
-@role_required("Admin")
-def rol_create(request):
-    """
-    Vista para crear un nuevo rol en el sistema.
-
-    Muestra un formulario para ingresar el nombre y la descripción del rol.
-
-    :param request: HttpRequest
-    :return: HttpResponse con el formulario o redirección
-    """
-    if request.method == "POST":
-        form = RoleForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Rol creado exitosamente.")
-            return redirect("usuarios:roles_list")
-    else:
-        form = RoleForm()
-    return render(request, "usuarios/rol_form.html", {"form": form})
 
 
 @login_required
-@role_required("Admin")
 def rol_edit(request, role_id):
     """
    Vista para editar los permisos de un rol (grupo).
@@ -445,7 +373,6 @@ def rol_edit(request, role_id):
 
 
 @login_required
-@role_required("Admin")
 def rol_delete(request, role_id):
     """
     Vista para eliminar un rol del sistema.
@@ -473,7 +400,6 @@ def rol_delete(request, role_id):
     return render(request, "usuarios/rol_delete_confirm.html", {"role": role})
 
 @login_required
-@role_required("Admin")
 def role_restore(request, role_id):
     """
     Vista para restaurar un rol eliminado lógicamente.
@@ -487,7 +413,6 @@ def role_restore(request, role_id):
     return render(request, "usuarios/role_restore_confirm.html", {"role": role})
 
 @login_required
-@role_required("Admin")
 def asignar_rol_a_usuario(request, user_id):
     """
     Vista para asignar roles (grupos) a un usuario.
@@ -497,6 +422,10 @@ def asignar_rol_a_usuario(request, user_id):
     :return: HttpResponse con el formulario de asignación o redirección.
     """
     usuario = get_object_or_404(User, pk=user_id)
+
+    if not request.user.has_permission('roles.assign_to_user'):
+        messages.error(request, 'No tienes permisos para asignar roles a usuarios.')
+        return redirect('usuarios:usuarios_list')
 
     if request.method == "POST":
         form = AsignarRolForm(request.POST, user=usuario)
@@ -524,7 +453,6 @@ def asignar_rol_a_usuario(request, user_id):
 
 
 @login_required
-@role_required("Admin")
 def ver_usuario_roles(request, user_id):
     """Vista para ver los roles de un usuario específico"""
     usuario = get_object_or_404(User, pk=user_id)
@@ -536,7 +464,6 @@ def ver_usuario_roles(request, user_id):
     })
 
 @login_required
-@role_required("Admin")
 def asignar_clientes_a_usuario(request, user_id):
     """
     Vista para asignar clientes a un usuario específico.
@@ -546,6 +473,9 @@ def asignar_clientes_a_usuario(request, user_id):
     :return: HttpResponse con el formulario o redirección
     """
     usuario = get_object_or_404(User, pk=user_id)
+    if not request.user.has_permission('usuarios.asignar_clientes'):
+        messages.error(request, 'No tienes permisos para asignar clientes a usuarios.')
+        return redirect('usuarios:usuarios_list')
     if request.method == "POST":
         form = AsignarClientesAUsuarioForm(request.POST, usuario=usuario)
         if form.is_valid():
