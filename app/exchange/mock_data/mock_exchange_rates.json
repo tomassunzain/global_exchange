@@ -1,5 +1,5 @@
 [
-  { "currency": "USD", "buy": "7000.00", "sell": "7200.00", "base_currency": "PYG", "source": "Banco Central del Paraguay", "timestamp": "2025-09-13T22:15:00Z" },
+  { "currency": "USD", "buy": "7200.00", "sell": "7400.00", "base_currency": "PYG", "source": "Banco Central del Paraguay", "timestamp": "2025-09-13T22:15:00Z" },
   { "currency": "EUR", "buy": "8350.00", "sell": "8700.00", "base_currency": "PYG", "source": "Banco Central del Paraguay", "timestamp": "2025-09-13T22:15:00Z" },
   { "currency": "BRL", "buy": "1290.00", "sell": "1350.00", "base_currency": "PYG", "source": "Banco Central del Paraguay", "timestamp": "2025-09-13T22:15:00Z" },
   { "currency": "ARS", "buy": "4.50", "sell": "5.50", "base_currency": "PYG", "source": "Banco Central del Paraguay", "timestamp": "2025-09-13T22:15:00Z" },

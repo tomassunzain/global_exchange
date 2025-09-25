@@ -22,7 +22,6 @@ from django.core import serializers
 
 # --- API para lista de cotizaciones (tasas de cambio) ---
 
-@login_required
 def cotizaciones_json(request):
     from .models import TasaCambio
     try:
