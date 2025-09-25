@@ -1,60 +1,24 @@
-// Simulador de Conversiones dinámico 
+// Inicialización del simulador de conversiones al cargar el DOM
 document.addEventListener('DOMContentLoaded', function() {
+    // Elementos principales del formulario y mapa de tasas
     const form = document.getElementById('simulador-form');
     const selectOrigen = document.getElementById('moneda-origen');
     const selectDestino = document.getElementById('moneda-destino');
     const inputMonto = document.getElementById('monto');
     let ratesMap = {};
 
-    // Detect endpoint según contexto (dashboard usa /exchange/rates/, landing puede usar ?source=local)
+    // Determina el endpoint de cotizaciones según el contexto de la página
     let endpoint = '/exchange/rates/';
     if (form && form.hasAttribute('data-source')) {
         endpoint += '?source=' + form.getAttribute('data-source');
     }
 
-    // ===== Animación para las tarjetas de estadísticas =====
-    const cards = document.querySelectorAll('.card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        card.style.opacity = '1';
-        card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-
-    // ===== Reloj en vivo =====
-    function updateTime() {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString();
-        const dateString = now.toLocaleDateString();
-        const timeElement = document.getElementById('current-time');
-        if (timeElement) timeElement.textContent = `${dateString} ${timeString}`;
-    }
-    setInterval(updateTime, 1000);
-    updateTime();
-
-    // ===== Hover en acciones rápidas =====
-    const quickActionCards = document.querySelectorAll('.btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-warning');
-    quickActionCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-2px)';
-        this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-        });
-        card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0)';
-        this.style.boxShadow = 'none';
-        });
-    });
-
+    // Obtiene las tasas de cambio y llena los selects de monedas
     fetch(endpoint)
         .then(res => res.json())
         .then(data => {
             if (data.rates) {
-                // Obtener todas las monedas únicas
                 const monedas = Array.from(new Set(data.rates.flatMap(rate => [rate.currency, rate.base_currency].filter(Boolean))));
-                // Poblar selects una sola vez
                 monedas.forEach(moneda => {
                     const opt1 = document.createElement('option');
                     opt1.value = moneda;
@@ -65,10 +29,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     opt2.textContent = moneda;
                     selectDestino.appendChild(opt2);
                 });
-                // Seleccionar por defecto PYG y USD
                 selectOrigen.value = 'PYG';
                 selectDestino.value = 'USD';
-                // Mapear tasas para acceso rápido
                 data.rates.forEach(rate => {
                     ratesMap[`${rate.currency}_${rate.base_currency}`] = {
                         buy: parseFloat(rate.buy),
@@ -78,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-    // Formatear el input de monto con puntos de miles para cualquier moneda
+    // Formatea el input de monto con separador de miles y solo permite números y separadores válidos
     function formatMontoInput() {
         let value = inputMonto.value.replace(/\./g, '').replace(/,/g, '.');
         if (!value) return;
@@ -89,9 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inputMonto.value = decimal ? entero + ',' + decimal : entero;
     }
     if (inputMonto) {
-        // Solo permitir números, punto y coma en la entrada
         inputMonto.addEventListener('input', function(e) {
-            // Permitir solo dígitos, puntos, comas y borrar lo demás
             let clean = this.value.replace(/[^\d.,]/g, '');
             if (this.value !== clean) {
                 this.value = clean;
@@ -100,20 +60,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Formatea un número a string con dos decimales y separador de miles
     function formatNumberCustom(num) {
         if (typeof num !== 'number') return num;
         return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    // Lógica principal del simulador: validación, cálculo y presentación de resultados
     if (form) {
         const errorDiv = document.getElementById('error-simulador');
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             errorDiv.classList.add('d-none');
             errorDiv.innerHTML = '';
-            // Quitar puntos y cambiar coma por punto para parsear
             let rawMonto = inputMonto.value.replace(/\./g, '').replace(/,/g, '.');
-            // Validar que sea un número positivo válido
             if (!/^\d+(\.\d{1,2})?$/.test(rawMonto) || isNaN(parseFloat(rawMonto)) || parseFloat(rawMonto) <= 0) {
                 errorDiv.classList.remove('d-none');
                 errorDiv.innerHTML = 'Ingrese un monto válido (solo números, sin letras ni símbolos).';
@@ -124,6 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const destino = selectDestino.value;
             let resultado = null;
 
+            // Lógica de conversión según el tipo de monedas seleccionadas
             if (origen === destino) {
                 const resultadoDiv = document.getElementById('resultado-simulador');
                 resultadoDiv.classList.remove('d-none', 'alert-success');
@@ -139,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let rate = ratesMap[`${origen}_PYG`];
                 resultado = rate ? monto * rate.buy : null;
             } else {
-                // Internacional a internacional: SIEMPRE pasar por PYG
+                // Internacional a internacional: siempre pasar por PYG
                 let rateOrigen = ratesMap[`${origen}_PYG`];
                 let rateDestino = ratesMap[`${destino}_PYG`];
                 if (rateOrigen && rateDestino) {
@@ -150,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // Muestra el resultado o un mensaje de error en pantalla
             const resultadoDiv = document.getElementById('resultado-simulador');
             if (resultado !== null && !isNaN(resultado)) {
                 resultadoDiv.classList.remove('d-none', 'alert-danger');
@@ -162,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Botón para alternar monedas
+        // Botón para intercambiar las monedas de origen y destino
         const swapBtn = document.getElementById('swap-monedas');
         if (swapBtn) {
             swapBtn.addEventListener('click', function() {
@@ -172,5 +134,4 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-    
 });

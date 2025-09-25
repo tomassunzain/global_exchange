@@ -15,8 +15,47 @@ from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
 from .forms import MonedaForm, TasaCambioForm
 from .models import Moneda, TasaCambio
+from clientes.models import TasaComision
 from usuarios.decorators import role_required
+from django.http import JsonResponse
+from django.core import serializers
 
+# --- API para lista de cotizaciones (tasas de cambio) ---
+
+@login_required
+def cotizaciones_json(request):
+    from .models import TasaCambio
+    try:
+        cotizaciones = TasaCambio.objects.select_related('moneda').order_by('-fecha_creacion')
+        data = []
+        for tasa in cotizaciones:
+            data.append({
+                'id': tasa.id,
+                'moneda': tasa.moneda.codigo if tasa.moneda else None,
+                'base': getattr(tasa, 'base_codigo', 'PYG'),
+                'compra': float(tasa.compra) if tasa.compra else None,
+                'venta': float(tasa.venta) if tasa.venta else None,
+                'fecha': tasa.fecha_creacion.strftime('%Y-%m-%d %H:%M:%S') if tasa.fecha_creacion else None,
+                'fuente': tasa.fuente,
+            })
+        return JsonResponse({'cotizaciones': data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+# --- API para tasas de descuento por tipo de cliente ---
+@login_required
+def tasas_comisiones_json(request):
+    """
+    Devuelve las tasas de descuento vigentes por tipo de cliente en formato JSON.
+    """
+    tipos = ["MIN", "CORP", "VIP"]
+    tasas = {}
+    for tipo in tipos:
+        tc = TasaComision.vigente_para_tipo(tipo)
+        tasas[tipo.lower()] = {
+            "tasa_descuento": float(tc.porcentaje) if tc else 0
+        }
+    return JsonResponse({"tasas": tasas})
 
 @login_required
 def monedas_list(request):
