@@ -260,11 +260,11 @@
               <p><strong>Miembro desde:</strong> {{ request.user.date_joined|date:"d/m/Y" }}</p>
               <p><strong>Cliente Activo:</strong></p>
               {% if request.user|has_permission:'clientes.seleccionar' %}
-                <form method="post" action="{% url 'clientes:seleccionar_cliente' request.user.id %}">
+                <form method="post" action="{% url 'clientes:seleccionar_cliente' 0 %}" id="form-cliente-activo">
                   {% csrf_token %}
-                  <select name="cliente_id" class="form-select" onchange="this.form.submit()">
+                  <select name="cliente_id" class="form-select" onchange="document.getElementById('form-cliente-activo').submit();">
                     {% for cliente in request.user.clientes.all %}
-                      <option value="{{ cliente.id }}" {% if cliente.id == request.session.cliente_activo %}selected{% endif %}>
+                      <option value="{{ cliente.id }}" {% if cliente.id == cliente_activo_id %}selected{% endif %}>
                         {{ cliente.nombre }} ({{ cliente.get_tipo_display }})
                       </option>
                     {% endfor %}
@@ -351,5 +351,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/simulador.js' %}"></script>
+<script src="{% static 'js/ui-helpers.js' %}"></script>
+<script src="{% static 'js/simulador2.js' %}"></script>
 {% endblock %}

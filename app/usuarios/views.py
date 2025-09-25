@@ -35,6 +35,9 @@ def dashboard_view(request):
     :return: HttpResponse con el dashboard
     """
     context = {}
+    # Agregar el cliente activo de la sesión al contexto
+    cliente_activo_id = request.session.get('cliente_activo')
+    context['cliente_activo_id'] = cliente_activo_id
     if request.user.is_authenticated:
         total_usuarios = User.objects.count()
         usuarios_activos = User.objects.filter(is_active=True).count()

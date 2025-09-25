@@ -112,10 +112,13 @@ def seleccionar_cliente(request, cliente_id):
     if not request.user.has_permission('clientes.seleccionar'):
         messages.error(request, "No tienes permiso para seleccionar cliente.")
         return redirect("dashboard")
+    # Leer el cliente_id del POST si es un formulario
+    if request.method == "POST":
+        cliente_id = request.POST.get("cliente_id")
     cliente = get_object_or_404(Cliente, pk=cliente_id, usuarios=request.user)
     request.session["cliente_activo"] = cliente.id
-    messages.success(request, f"Ahora estás operando como cliente: {cliente.nombre}")
-    return redirect("dashboard")
+    messages.success(request, f"Ahora estás operando como cliente: {cliente.nombre} ({cliente.get_tipo_display()})")
+    return redirect("usuarios:dashboard")
 
 @login_required
 def asignar_usuarios_a_cliente(request, cliente_id):
