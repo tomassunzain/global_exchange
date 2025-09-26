@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if transaccion %}Editar Transacción #{{ transaccion.id }}{% else %}Nueva Transacción{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'usuarios:dashboard' %}">Inicio</a>
+<a href="{% url 'transacciones:transacciones_list' %}" class="breadcrumb-item">Transacciones</a>
+<span class="breadcrumb-item active">
+  {% if transaccion %}Editar{% else %}Nueva{% endif %} Transacción
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <strong>
+            {% if transaccion %}
+              <i class="bi bi-pencil"></i> Editar Transacción #{{ transaccion.id }}
+            {% else %}
+              <i class="bi bi-cash-coin"></i> Nueva Transacción
+            {% endif %}
+          </strong>
+          <div class="card-header-actions">
+            <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-sm btn-secondary">
+              <i class="bi bi-arrow-left"></i> Volver
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="{{ form.cliente.id_for_label }}" class="form-label">
+                    <strong>Cliente *</strong>
+                  </label>
+                  {{ form.cliente }}
+                  {% if form.cliente.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.cliente.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                    <strong>Tipo de Operación *</strong>
+                  </label>
+                  {{ form.tipo }}
+                  {% if form.tipo.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.tipo.errors.0 }}
+                    </div>
+                  {% endif %}
+                  <div class="form-text">
+                    Seleccione si el cliente compra o vende divisas
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="{{ form.moneda.id_for_label }}" class="form-label">
+                    <strong>Moneda *</strong>
+                  </label>
+                  {{ form.moneda }}
+                  {% if form.moneda.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.moneda.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="{{ form.monto_operado.id_for_label }}" class="form-label">
+                    <strong>Monto en Moneda *</strong>
+                  </label>
+                  {{ form.monto_operado }}
+                  {% if form.monto_operado.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.monto_operado.errors.0 }}
+                    </div>
+                  {% endif %}
+                  <div class="form-text">
+                    Ejemplo: 1000 USD
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- mostrar la tasa aplicada / comision como info calculada -->
+            {% if transaccion %}
+              <div class="alert alert-info">
+                <i class="bi bi-calculator"></i>
+                Tasa aplicada: <strong>{{ transaccion.tasa_aplicada }}</strong><br>
+                Comisión: <strong>{{ transaccion.comision }}</strong><br>
+                Monto en PYG: <strong>{{ transaccion.monto_pyg }}</strong>
+              </div>
+            {% endif %}
+
+            <!-- errores globales -->
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                {% if transaccion %}
+                  <i class="bi bi-check-lg"></i> Actualizar
+                {% else %}
+                  <i class="bi bi-cash-coin"></i> Crear Transacción
+                {% endif %}
+              </button>
+              <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

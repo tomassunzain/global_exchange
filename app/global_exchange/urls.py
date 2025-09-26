@@ -35,4 +35,5 @@ urlpatterns = [
     path('monedas/', include('monedas.urls')),
     path('payments/', include('payments.urls', namespace='payments')),
     path('medios_acreditacion/', include('medios_acreditacion.urls', namespace='medios_acreditacion')),
+path('transacciones/', include('transaccion.urls')),
 ]
