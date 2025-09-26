@@ -66,11 +66,13 @@ def calcular_transaccion(cliente, tipo, moneda, monto_operado):
         'monto_pyg': monto_pyg,
     }
 
-def crear_transaccion(cliente, tipo, moneda, monto_operado, tasa_aplicada, comision, monto_pyg):
+def crear_transaccion(cliente, tipo, moneda, monto_operado, tasa_aplicada, comision, monto_pyg, medio_pago=None):
     """
     Cliente inicia una operación (COMPRA o VENTA).
     Se crea en estado PENDIENTE. No hay movimiento todavía.
     """
+    validate_limits(cliente, moneda, monto_operado, monto_pyg)
+    
     with dj_tx.atomic():
         t = Transaccion.objects.create(
             cliente=cliente,
@@ -80,12 +82,13 @@ def crear_transaccion(cliente, tipo, moneda, monto_operado, tasa_aplicada, comis
             monto_pyg=monto_pyg,
             tasa_aplicada=tasa_aplicada,
             comision=comision,
+            medio_pago=medio_pago,
             estado=EstadoTransaccionEnum.PENDIENTE,
         )
     return t
 
 
-def confirmar_transaccion(transaccion, medio):
+def confirmar_transaccion(transaccion):
     """
     La casa de cambio confirma que el pago se recibió (PYG o divisa entregada).
     Esto crea el movimiento en PYG y marca la transacción como PAGADA.
@@ -102,7 +105,6 @@ def confirmar_transaccion(transaccion, medio):
         Movimiento.objects.create(
             transaccion=transaccion,
             cliente=transaccion.cliente,
-            medio=medio,
             tipo=mov_tipo,
             monto=transaccion.monto_pyg,
         )

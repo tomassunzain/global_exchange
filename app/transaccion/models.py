@@ -1,5 +1,6 @@
 from django.db import models
 
+from payments.models import PaymentMethod
 from clientes.models import Cliente
 from commons.enums import TipoTransaccionEnum, EstadoTransaccionEnum, TipoMovimientoEnum
 from medios_acreditacion.models import MedioAcreditacion
@@ -19,6 +20,14 @@ class Transaccion(models.Model):
     tipo = models.CharField(
         max_length=10,
         choices=TipoTransaccionEnum.choices
+    )
+    medio_pago = models.ForeignKey(
+        PaymentMethod,
+        on_delete=models.PROTECT,
+        related_name="transacciones",
+        verbose_name="Medio de Pago",
+        null=True,   
+        blank=True,
     )
     monto_operado = models.DecimalField(max_digits=18, decimal_places=2)
     monto_pyg = models.DecimalField(max_digits=18, decimal_places=2)
@@ -47,7 +56,9 @@ class Movimiento(models.Model):
     )
     medio = models.ForeignKey(
         MedioAcreditacion, on_delete=models.CASCADE,
-        related_name="movimientos", verbose_name="Medio de Acreditación"
+        related_name="movimientos", verbose_name="Medio de Acreditación",
+        null=True,
+        blank=True,
     )
 
     tipo = models.CharField(
