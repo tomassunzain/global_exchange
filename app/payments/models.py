@@ -11,6 +11,8 @@ class PaymentMethod(models.Model):
     PAYMENT_TYPE_CHOICES = [(e.value, e.name.replace('_', ' ').title()) for e in PaymentTypeEnum]
     payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, verbose_name="Tipo de Método de Pago", default=PaymentTypeEnum.CUENTA_BANCARIA.value)
 
+    #TODO unificar modelos a uno generico
+
     # Campos para Cuenta Bancaria
     titular_cuenta = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre del titular")
     tipo_cuenta = models.CharField(max_length=50, blank=True, null=True, verbose_name="Tipo de cuenta")
@@ -21,7 +23,6 @@ class PaymentMethod(models.Model):
     proveedor_billetera = models.CharField(max_length=100, blank=True, null=True, verbose_name="Proveedor de billetera")
     billetera_email_telefono = models.CharField(max_length=100, blank=True, null=True, verbose_name="Email o teléfono asociado")
     billetera_titular = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre del titular billetera")
-
     # Campos para Tarjeta de Crédito
     tarjeta_nombre = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre en tarjeta")
     tarjeta_numero = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número de tarjeta")

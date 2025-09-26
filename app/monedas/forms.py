@@ -1,8 +1,14 @@
 """
-Forms de la app 'monedas'.
+Forms de la aplicación 'monedas'.
 
-- MonedaForm: formulario simple para ABM de Moneda. Los widgets incluyen
-  clases Bootstrap para una UI consistente con el resto del sistema.
+Contiene formularios para la gestión de Moneda y TasaCambio:
+
+- MonedaForm: creación y edición de monedas, con validaciones de código único
+  y restricción de moneda base (solo 'PYG').
+- TasaCambioForm: creación y edición de tasas de cambio, validando que
+  venta >= compra y limitando la selección a monedas activas no base.
+
+Los widgets utilizan clases de Bootstrap para una interfaz consistente.
 """
 
 from django import forms
@@ -13,6 +19,14 @@ from .models import Moneda, TasaCambio
 
 
 class MonedaForm(forms.ModelForm):
+    """
+    Formulario para crear o editar monedas.
+
+    Validaciones principales:
+    - Código de moneda único, considerando monedas inactivas.
+    - Solo 'PYG' puede ser moneda base del sistema.
+    """
+
     class Meta:
         model = Moneda
         fields = ['codigo', 'nombre', 'simbolo', 'decimales', 'activa']
@@ -32,14 +46,16 @@ class MonedaForm(forms.ModelForm):
         }
 
     def clean_codigo(self):
-        codigo = self.cleaned_data['codigo'].upper()
+        """
+        Valida que el código de la moneda sea único.
 
-        # Validar que no exista otra moneda con el mismo código (incluyendo inactivas)
+        :raises ValidationError: si ya existe otra moneda con el mismo código
+        :return: código en mayúsculas
+        """
+        codigo = self.cleaned_data['codigo'].upper()
         if self.instance.pk:
-            # En edición, excluir la instancia actual
             existe = Moneda.objects.all_with_inactive().exclude(pk=self.instance.pk).filter(codigo=codigo).exists()
         else:
-            # En creación, verificar contra todas las monedas
             existe = Moneda.objects.all_with_inactive().filter(codigo=codigo).exists()
 
         if existe:
@@ -48,17 +64,31 @@ class MonedaForm(forms.ModelForm):
         return codigo
 
     def clean(self):
+        """
+        Validaciones generales del formulario.
+
+        - Solo 'PYG' puede ser moneda base.
+        :raises ValidationError: si se intenta asignar otra moneda como base
+        :return: cleaned_data
+        """
         cleaned_data = super().clean()
         codigo = cleaned_data.get('codigo', '').upper()
 
-        # Validar que solo PYG puede ser moneda base
         if codigo != 'PYG' and self.instance.es_base:
             raise ValidationError('Solo la moneda PYG puede ser moneda base del sistema.')
 
         return cleaned_data
-      
+
 
 class TasaCambioForm(forms.ModelForm):
+    """
+    Formulario para crear o editar tasas de cambio.
+
+    Validaciones principales:
+    - La tasa de venta no puede ser menor que la de compra.
+    - Solo se pueden seleccionar monedas activas que no sean base.
+    """
+
     class Meta:
         model = TasaCambio
         fields = ['moneda', 'compra', 'venta', 'fuente', 'ts_fuente', 'activa']
@@ -78,11 +108,21 @@ class TasaCambioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """
+        Inicializa el formulario y limita la selección de moneda
+        a monedas activas que no sean base.
+        """
         super().__init__(*args, **kwargs)
-        # Sólo monedas NO base y activas
         self.fields['moneda'].queryset = Moneda.objects.all().filter(activa=True, es_base=False)
 
     def clean(self):
+        """
+        Validaciones generales del formulario.
+
+        - La tasa de venta no puede ser menor que la de compra.
+        :raises ValidationError: si venta < compra
+        :return: cleaned_data
+        """
         cleaned = super().clean()
         compra = cleaned.get('compra')
         venta = cleaned.get('venta')

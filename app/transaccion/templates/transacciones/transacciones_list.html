@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+{% load usuarios_extras %}
+
+{% block title %}Historial de Transacciones{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'usuarios:dashboard' %}">Inicio</a>
+<span class="breadcrumb-item active">Transacciones</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <strong>Historial de Transacciones</strong>
+        </div>
+        <div class="card-body">
+          {% if transacciones %}
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Tipo</th>
+                    <th>Moneda</th>
+                    <th>Monto Operado</th>
+                    <th>Monto PYG</th>
+                    <th>Tasa</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in transacciones %}
+                    <tr>
+                      <td><strong>{{ t.id }}</strong></td>
+                      <td>{{ t.cliente.nombre }}</td>
+                      <td>
+                        <span class="badge {% if t.tipo == 'compra' %}bg-primary{% elif t.tipo == 'venta' %}bg-success{% else %}bg-secondary{% endif %}">
+                          {{ t.get_tipo_display }}
+                        </span>
+                      </td>
+                      <td>{{ t.moneda.codigo }}</td>
+                      <td>{{ t.monto_operado }}</td>
+                      <td>{{ t.monto_pyg }}</td>
+                      <td>{{ t.tasa_aplicada }}</td>
+                      <td>
+                        {% if t.estado == 'pendiente' %}
+                          <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% elif t.estado == 'pagada' %}
+                          <span class="badge bg-success">Pagada</span>
+                        {% elif t.estado == 'cancelada' %}
+                          <span class="badge bg-secondary">Cancelada</span>
+                        {% elif t.estado == 'anulada' %}
+                          <span class="badge bg-danger">Anulada</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ t.fecha|date:"d/m/Y H:i" }}</td>
+                      <td class="text-center">
+                        <div class="btn-group" role="group">
+                          {% if t.estado == 'pendiente' %}
+                            {% if request.user|has_permission:'transacciones.confirmar' %}
+                              <a href="{% url 'transacciones:confirmar' t.id %}"
+                                 class="btn btn-sm btn-outline-success"
+                                 data-bs-toggle="tooltip"
+                                 title="Confirmar transacción">
+                                <i class="bi bi-check2-circle"></i>
+                              </a>
+                            {% endif %}
+                            {% if request.user|has_permission:'transacciones.cancelar' %}
+                              <a href="{% url 'transacciones:cancelar' t.id %}"
+                                 class="btn btn-sm btn-outline-danger"
+                                 data-bs-toggle="tooltip"
+                                 title="Cancelar transacción">
+                                <i class="bi bi-x-circle"></i>
+                              </a>
+                            {% endif %}
+                          {% elif t.estado == 'pagada' %}
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              No hay transacciones registradas.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+});
+</script>
+{% endblock %}

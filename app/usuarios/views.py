@@ -21,6 +21,7 @@ from .models import Role, UserRole
 from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
 from monedas.models import TasaCambio, Moneda
+from transaccion.models import Transaccion
 
 User = get_user_model()
 
@@ -35,6 +36,9 @@ def dashboard_view(request):
     :return: HttpResponse con el dashboard
     """
     context = {}
+    # Agregar el cliente activo de la sesión al contexto
+    cliente_activo_id = request.session.get('cliente_activo')
+    context['cliente_activo_id'] = cliente_activo_id
     if request.user.is_authenticated:
         total_usuarios = User.objects.count()
         usuarios_activos = User.objects.filter(is_active=True).count()
@@ -59,6 +63,7 @@ def dashboard_view(request):
         # Obtener totales para las tarjetas
         total_monedas = Moneda.objects.filter(activa=True).count()
         total_cotizaciones = TasaCambio.objects.count()
+        total_transacciones = Transaccion.objects.count()
 
         context.update({
             'total_usuarios': total_usuarios,
@@ -68,6 +73,7 @@ def dashboard_view(request):
             'ultimas_cotizaciones': ultimas_cotizaciones,
             'total_monedas': total_monedas,
             'total_cotizaciones': total_cotizaciones,
+            'total_transacciones': total_transacciones,
         })
 
     return render(request, "dashboard.html", context)

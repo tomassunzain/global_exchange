@@ -1,21 +1,44 @@
 """
 Formularios para la aplicación de clientes.
-Define los formularios y validaciones para la gestión de clientes.
+
+Este módulo define los formularios y validaciones relacionados con la gestión de clientes
+y las tasas de comisión. Contiene clases basadas en ModelForm para facilitar la
+creación, edición y asignación de usuarios a clientes, así como la configuración de
+descuentos por segmento.
 """
+
 from django import forms
 from .models import Cliente, TasaComision
 
 
 class ClienteForm(forms.ModelForm):
     """
-    Formulario para la gestión de clientes.
+    Formulario principal para la gestión de clientes.
+
+    Permite crear o editar un cliente especificando:
+    - nombre
+    - tipo de cliente (segmento)
+    - usuarios asociados
+
+    Attributes:
+        Meta (ModelForm.Meta): Configuración de campos, widgets y etiquetas.
     """
+
     class Meta:
+        """
+        Configuración del formulario ClienteForm.
+
+        Attributes:
+            model (Model): Modelo Cliente al que está asociado el formulario.
+            fields (list): Campos a incluir en el formulario.
+            widgets (dict): Widgets personalizados para la visualización de campos.
+            labels (dict): Etiquetas legibles para los campos del formulario.
+        """
         model = Cliente
         fields = ["nombre", "tipo", "usuarios"]
         widgets = {
             "usuarios": forms.CheckboxSelectMultiple,
-            }
+        }
         labels = {
             "nombre": "Nombre del Cliente",
             "tipo": "Segmento del Cliente",
@@ -25,27 +48,59 @@ class ClienteForm(forms.ModelForm):
 
 class AsignarUsuariosAClienteForm(forms.ModelForm):
     """
-    Formulario para asignar usuarios a un cliente.
+    Formulario para asignar usuarios a un cliente existente.
+
+    Este formulario permite vincular o desvincular múltiples usuarios
+    a un cliente ya registrado.
+
+    Attributes:
+        Meta (ModelForm.Meta): Configuración de campos y widgets.
     """
+
     class Meta:
+        """
+        Configuración del formulario AsignarUsuariosAClienteForm.
+
+        Attributes:
+            model (Model): Modelo Cliente al que está asociado el formulario.
+            fields (list): Campos a incluir en el formulario.
+            widgets (dict): Widgets personalizados para la visualización de campos.
+        """
         model = Cliente
         fields = ["usuarios"]
         widgets = {
-    """
-    Formularios para la aplicación de clientes.
-    Define los formularios y validaciones para la gestión de clientes.
-    """
-    """
-    Formulario para la gestión de clientes.
-    """
-    """
-    Formulario para asignar usuarios a un cliente.
-    """
+            "usuarios": forms.CheckboxSelectMultiple,
         }
 
 
 class TasaComisionForm(forms.ModelForm):
+    """
+    Formulario para gestionar las tasas de comisión por tipo de cliente.
+
+    Permite definir:
+    - tipo de cliente (segmento)
+    - porcentaje de descuento
+    - rango de vigencia (desde/hasta)
+    - estado de la tasa
+
+    Attributes:
+        Meta (ModelForm.Meta): Configuración de campos, widgets y etiquetas.
+
+    Methods:
+        clean_porcentaje():
+            Valida el campo de porcentaje antes de guardar los datos limpios.
+    """
+
     class Meta:
+        """
+        Configuración del formulario TasaComisionForm.
+
+        Attributes:
+            model (Model): Modelo TasaComision al que está asociado el formulario.
+            fields (list): Campos a incluir en el formulario.
+            widgets (dict): Widgets personalizados para cada campo.
+            labels (dict): Etiquetas legibles para los campos del formulario.
+        """
         model = TasaComision
         fields = ["tipo_cliente", "porcentaje", "vigente_desde", "vigente_hasta", "estado"]
         widgets = {
@@ -69,5 +124,11 @@ class TasaComisionForm(forms.ModelForm):
         }
 
     def clean_porcentaje(self):
+        """
+        Validación del campo 'porcentaje'.
+
+        Returns:
+            float: Valor del porcentaje validado.
+        """
         v = self.cleaned_data["porcentaje"]
         return v

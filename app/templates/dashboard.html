@@ -204,6 +204,21 @@
     </div>
   </div>
 
+    <div class="col-xl-3 col-md-6">
+      <div class="card text-bg-secondary mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">Transferencias</h5>
+              <h3 class="mb-0">{{ total_transacciones|default:0 }}</h3>
+              <small class="opacity-75">Registradas</small>
+            </div>
+            <i class="bi bi-arrow-left-right fs-1 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
   <!-- Acciones rápidas -->
   <div class="row mb-4">
     <div class="col-lg-6 mb-4 mb-lg-0">
@@ -237,6 +252,12 @@
                 Gestionar Monedas
               </a>
             </div>
+            <div class="col-6">
+              <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-outline-danger w-100">
+                <i class="bi bi-arrow-left-right d-block fs-3 mb-2"></i>
+                Transferencias
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -260,11 +281,11 @@
               <p><strong>Miembro desde:</strong> {{ request.user.date_joined|date:"d/m/Y" }}</p>
               <p><strong>Cliente Activo:</strong></p>
               {% if request.user|has_permission:'clientes.seleccionar' %}
-                <form method="post" action="{% url 'clientes:seleccionar_cliente' request.user.id %}">
+                <form method="post" action="{% url 'clientes:seleccionar_cliente' 0 %}" id="form-cliente-activo">
                   {% csrf_token %}
-                  <select name="cliente_id" class="form-select" onchange="this.form.submit()">
+                  <select name="cliente_id" class="form-select" onchange="document.getElementById('form-cliente-activo').submit();">
                     {% for cliente in request.user.clientes.all %}
-                      <option value="{{ cliente.id }}" {% if cliente.id == request.session.cliente_activo %}selected{% endif %}>
+                      <option value="{{ cliente.id }}" {% if cliente.id == cliente_activo_id %}selected{% endif %}>
                         {{ cliente.nombre }} ({{ cliente.get_tipo_display }})
                       </option>
                     {% endfor %}
@@ -351,5 +372,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/simulador.js' %}"></script>
+<script src="{% static 'js/ui-helpers.js' %}"></script>
+<script src="{% static 'js/simulador_complejo.js' %}"></script>
 {% endblock %}

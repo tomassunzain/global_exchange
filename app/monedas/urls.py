@@ -17,6 +17,8 @@ urlpatterns = [
     path('inactivas/', views.monedas_inactivas, name='monedas_inactivas'),
 
     # Tasas de cambio
+    path('tasas_comisiones/', views.tasas_comisiones_json, name='tasas_comisiones_json'),
+    path('cotizaciones_json/', views.cotizaciones_json, name='cotizaciones_json'),
     path('tasas/', views.tasas_list, name='tasas_list'),
     path('tasas/nueva/', views.tasa_create, name='tasa_create'),
     path('tasas/<int:tasa_id>/editar/', views.tasa_edit, name='tasa_edit'),
