@@ -155,8 +155,8 @@ def seleccionar_cliente(request, cliente_id):
 
     cliente = get_object_or_404(Cliente, pk=cliente_id, usuarios=request.user)
     request.session["cliente_activo"] = cliente.id
-    messages.success(request, f"Ahora estás operando como cliente: {cliente.nombre} ({cliente.get_tipo_display()})")
-    return redirect("usuarios:dashboard")
+    messages.success(request, f"Ahora estás operando como cliente: {cliente.nombre}")
+    return redirect("dashboard")
 
 
 @login_required
