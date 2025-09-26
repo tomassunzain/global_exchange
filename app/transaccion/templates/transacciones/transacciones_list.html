@@ -41,31 +41,29 @@
                       <td><strong>{{ t.id }}</strong></td>
                       <td>{{ t.cliente.nombre }}</td>
                       <td>
-                        {% if t.tipo == 'COMPRA' %}
-                          <span class="badge bg-primary">Compra</span>
-                        {% else %}
-                          <span class="badge bg-success">Venta</span>
-                        {% endif %}
+                        <span class="badge {% if t.tipo == 'compra' %}bg-primary{% elif t.tipo == 'venta' %}bg-success{% else %}bg-secondary{% endif %}">
+                          {{ t.get_tipo_display }}
+                        </span>
                       </td>
                       <td>{{ t.moneda.codigo }}</td>
                       <td>{{ t.monto_operado }}</td>
                       <td>{{ t.monto_pyg }}</td>
                       <td>{{ t.tasa_aplicada }}</td>
                       <td>
-                        {% if t.estado == 'PENDIENTE' %}
+                        {% if t.estado == 'pendiente' %}
                           <span class="badge bg-warning text-dark">Pendiente</span>
-                        {% elif t.estado == 'PAGADA' %}
+                        {% elif t.estado == 'pagada' %}
                           <span class="badge bg-success">Pagada</span>
-                        {% elif t.estado == 'CANCELADA' %}
+                        {% elif t.estado == 'cancelada' %}
                           <span class="badge bg-secondary">Cancelada</span>
-                        {% elif t.estado == 'ANULADA' %}
+                        {% elif t.estado == 'anulada' %}
                           <span class="badge bg-danger">Anulada</span>
                         {% endif %}
                       </td>
                       <td>{{ t.fecha|date:"d/m/Y H:i" }}</td>
                       <td class="text-center">
                         <div class="btn-group" role="group">
-                          {% if t.estado == 'PENDIENTE' %}
+                          {% if t.estado == 'pendiente' %}
                             {% if request.user|has_permission:'transacciones.confirmar' %}
                               <a href="{% url 'transacciones:confirmar' t.id %}"
                                  class="btn btn-sm btn-outline-success"
@@ -82,7 +80,7 @@
                                 <i class="bi bi-x-circle"></i>
                               </a>
                             {% endif %}
-                          {% elif t.estado == 'PAGADA' %}
+                          {% elif t.estado == 'pagada' %}
                           {% endif %}
                         </div>
                       </td>

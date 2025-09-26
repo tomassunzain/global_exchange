@@ -3,9 +3,68 @@ from django.db.models import Sum
 from django.db import transaction as dj_tx
 from django.utils import timezone
 
-from clientes.models import LimitePYG, LimiteMoneda
+
+from decimal import Decimal
+from clientes.models import LimitePYG, LimiteMoneda, TasaComision
 from transaccion.models import Transaccion, Movimiento
 from commons.enums import EstadoTransaccionEnum, TipoTransaccionEnum, TipoMovimientoEnum
+from monedas.models import TasaCambio
+import json
+import os
+from django.conf import settings
+
+def calcular_transaccion(cliente, tipo, moneda, monto_operado):
+    """
+    Calcula tasa, comisión y monto_pyg según la lógica del simulador_complejo.js
+    """
+    # 1. Segmento del cliente
+    segmento = cliente.tipo.upper() if hasattr(cliente, 'tipo') else 'MIN'
+
+    # 2. Buscar tasa de cambio activa para la moneda
+    try:
+        tasa = TasaCambio.objects.filter(moneda=moneda, activa=True).latest('fecha_creacion')
+    except TasaCambio.DoesNotExist:
+        raise ValidationError(f"No hay tasa de cambio activa para {moneda}.")
+
+    # 3. Leer comisiones desde el archivo json (mock)
+    comisiones_path = os.path.join(settings.BASE_DIR, 'static', 'comisiones.json')
+    try:
+        with open(comisiones_path, 'r', encoding='utf-8') as f:
+            comisiones = json.load(f)
+    except Exception:
+        comisiones = []
+
+    com = next((c for c in comisiones if c['currency'] == moneda.codigo), None)
+    comision_buy = Decimal(str(com['commission_buy'])) if com else Decimal('0')
+    comision_sell = Decimal(str(com['commission_sell'])) if com else Decimal('0')
+
+    # 4. Descuento por segmento
+    tc = TasaComision.vigente_para_tipo(segmento)
+    descuento = Decimal(str(tc.porcentaje)) if tc else Decimal('0')
+    
+    # 5. Cálculo según tipo
+    monto_operado = Decimal(monto_operado)
+    pb = tasa.compra + comision_buy
+    if tipo == TipoTransaccionEnum.COMPRA:
+        # COMPRA: de moneda extranjera a PYG
+        tc_compra = pb - (comision_buy - (comision_buy * descuento / 100))
+        tasa_aplicada = tc_compra
+        comision = comision_buy
+        monto_pyg = monto_operado * tc_compra
+    elif tipo == TipoTransaccionEnum.VENTA:
+        # VENTA: de PYG a moneda extranjera
+        tc_venta = pb + comision_sell - (comision_sell * descuento / 100)
+        tasa_aplicada = tc_venta
+        comision = comision_sell
+        monto_pyg = monto_operado / tc_venta
+    else:
+        raise ValidationError("Tipo de transacción inválido.")
+
+    return {
+        'tasa_aplicada': tasa_aplicada,
+        'comision': comision,
+        'monto_pyg': monto_pyg,
+    }
 
 def crear_transaccion(cliente, tipo, moneda, monto_operado, tasa_aplicada, comision, monto_pyg):
     """
@@ -21,6 +80,7 @@ def crear_transaccion(cliente, tipo, moneda, monto_operado, tasa_aplicada, comis
             monto_pyg=monto_pyg,
             tasa_aplicada=tasa_aplicada,
             comision=comision,
+            estado=EstadoTransaccionEnum.PENDIENTE,
         )
     return t
 
@@ -44,7 +104,7 @@ def confirmar_transaccion(transaccion, medio):
             cliente=transaccion.cliente,
             medio=medio,
             tipo=mov_tipo,
-            monto_pyg=transaccion.monto_pyg,
+            monto=transaccion.monto_pyg,
         )
 
     return transaccion

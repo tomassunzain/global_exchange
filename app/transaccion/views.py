@@ -15,7 +15,10 @@ def transacciones_list(request):
 def confirmar_view(request, pk):
     transaccion = get_object_or_404(Transaccion, pk=pk)
     try:
-        medio = transaccion.cliente.medioacreditacion_set.first()  # o elegir el medio correcto
+        medio = transaccion.cliente.medios_acreditacion.first()  # related_name correcto
+        if not medio:
+            messages.error(request, "El cliente no tiene un medio de acreditación registrado.")
+            return redirect("transacciones:transacciones_list")
         confirmar_transaccion(transaccion, medio)
         messages.success(request, f"Transacción {transaccion.id} confirmada correctamente.")
     except ValidationError as e:
@@ -41,10 +44,15 @@ def transaccion_create(request):
             moneda_operada = form.cleaned_data["moneda"]
             monto_operado = form.cleaned_data["monto_operado"]
 
-            # TODO: calcular tasa, comisión y monto_pyg aquí (puedes delegar a un helper)
-            tasa = 7390  # ej. hardcode, luego buscar en TasaCambio
-            comision = 100
-            monto_pyg = monto_operado * tasa + comision if tipo == "COMPRA" else monto_operado * tasa - comision
+            from .services import calcular_transaccion
+            try:
+                calculo = calcular_transaccion(cliente, tipo, moneda_operada, monto_operado)
+                tasa = calculo['tasa_aplicada']
+                comision = calculo['comision']
+                monto_pyg = calculo['monto_pyg']
+            except Exception as e:
+                messages.error(request, f"Error en el cálculo: {e}")
+                return render(request, "transacciones/transaccion_form.html", {"form": form})
 
             transaccion = crear_transaccion(cliente, tipo, moneda_operada, monto_operado, tasa, comision, monto_pyg)
             messages.success(request, f"Transacción {transaccion.id} creada correctamente.")

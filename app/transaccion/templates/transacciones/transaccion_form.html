@@ -26,6 +26,9 @@
               <i class="bi bi-cash-coin"></i> Nueva Transacción
             {% endif %}
           </strong>
+          <span id="timeout-timer" style="float:right; font-size:1rem; color:#6c757d; margin-left:1rem;">
+            Sesión caduca en <span id="timeout-seconds">120</span>s
+          </span>
           <div class="card-header-actions">
             <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-sm btn-secondary">
               <i class="bi bi-arrow-left"></i> Volver
@@ -137,4 +140,21 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Timeout de 2 minutos (120000 ms). Muestra temporizador visual y recarga la página al finalizar.
+  let seconds = 60;
+  const timerSpan = document.getElementById('timeout-seconds');
+  const interval = setInterval(function() {
+    seconds--;
+    if (timerSpan) timerSpan.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(interval);
+      alert('Sesión caducada. La página se recargará.');
+      window.location.reload();
+    }
+  }, 1000);
+</script>
 {% endblock %}
