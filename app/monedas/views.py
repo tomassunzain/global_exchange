@@ -190,7 +190,7 @@ def tasa_edit(request, tasa_id):
             try:
                 # Al editar, mantener el estado activo actual
                 tasa = form.save(commit=False)
-                tasa.save()  # ✅ El save() del modelo mantiene la lógica de activación
+                tasa.save()  # El save() del modelo mantiene la lógica de activación
 
                 messages.success(request, 'Tasa de cambio actualizada.')
                 return redirect('monedas:tasas_list')
