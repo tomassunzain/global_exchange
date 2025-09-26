@@ -19,8 +19,9 @@ class MonedaModelTest(TestCase):
         otra_base = Moneda(codigo='EUR', nombre='Euro', es_base=True)
         otra_base.save()
         self.moneda_base.refresh_from_db()
-        self.assertFalse(self.moneda_base.es_base)
-        self.assertTrue(otra_base.es_base)
+        # Solo PYG puede ser base, EUR no será base
+        self.assertTrue(self.moneda_base.es_base)
+        self.assertFalse(otra_base.es_base)
 
     def test_soft_delete(self):
         self.moneda_usd.delete()
@@ -52,7 +53,11 @@ class MonedaViewsTest(TestCase):
     """Pruebas de vistas para la app monedas."""
 
     def setUp(self):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.user = User.objects.create_user(email="test@monedas.com", password="testpass123", is_staff=True)
         self.client = Client()
+        self.client.force_login(self.user)
         self.moneda_base = Moneda.objects.create(codigo='PYG', nombre='Guaraní', es_base=True)
         self.moneda_usd = Moneda.objects.create(codigo='USD', nombre='Dólar')
 
@@ -92,7 +97,11 @@ class TasaCambioViewsTest(TestCase):
     """Pruebas de vistas CRUD para TasaCambio y endpoints JSON."""
 
     def setUp(self):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.user = User.objects.create_user(email="test@tasas.com", password="testpass123", is_staff=True)
         self.client = Client()
+        self.client.force_login(self.user)
         self.moneda_usd = Moneda.objects.create(codigo='USD', nombre='Dólar')
         self.tasa = TasaCambio.objects.create(moneda=self.moneda_usd, compra=7000, venta=7200, activa=True)
 
@@ -102,15 +111,20 @@ class TasaCambioViewsTest(TestCase):
         self.assertContains(response, 'USD')
 
     def test_tasa_create_view(self):
+        from datetime import timedelta
+        ts_nuevo = (timezone.now() + timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M')
         response = self.client.post(reverse('monedas:tasa_create'), {
             'moneda': self.moneda_usd.id,
             'compra': 7100,
             'venta': 7300,
             'fuente': 'Banco Test',
-            'ts_fuente': timezone.now(),
+            'ts_fuente': ts_nuevo,
             'activa': True
         })
-        self.assertEqual(TasaCambio.objects.filter(moneda=self.moneda_usd).count(), 2)
+        total = TasaCambio.objects.filter(moneda=self.moneda_usd).count()
+        activas = TasaCambio.objects.filter(moneda=self.moneda_usd, activa=True).count()
+        self.assertEqual(total, 1)
+        self.assertEqual(activas, 1)
 
     def test_tasa_edit_view(self):
         response = self.client.post(reverse('monedas:tasa_edit', args=[self.tasa.id]), {

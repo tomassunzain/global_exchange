@@ -38,7 +38,7 @@ class MedioAcreditacionViewsTest(TestCase):
         self.user = User.objects.create_user(email="test@test.com", password="1234")
         self.cliente = Cliente.objects.create(nombre="Cliente Test", tipo="MIN")
         self.cliente.usuarios.add(self.user)
-        self.client.login(email="test@test.com", password="1234")
+        self.client.force_login(self.user)
         self.m1 = MedioAcreditacion.objects.create(
             cliente=self.cliente,
             tipo_medio="cuenta_bancaria",
@@ -68,7 +68,8 @@ class MedioAcreditacionViewsTest(TestCase):
         response = self.client.post(url, {
             'tipo_medio': 'billetera',
             'proveedor_billetera': 'MercadoPago',
-            'billetera_email_telefono': 'nuevo@mail.com',
+            'billetera_email_telefono': 'nuevo@gmail.com',
+            'billetera_titular': 'Juan Perez',
         })
         self.m2.refresh_from_db()
         self.assertEqual(self.m2.proveedor_billetera, 'MercadoPago')
