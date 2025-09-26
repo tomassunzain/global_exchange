@@ -55,6 +55,35 @@
           <li class="nav-title">Gestión</li>
         {% endif %}
 
+        {% if request.user|has_any_permission:'transacciones.list,transacciones.create,transacciones.confirmar,transacciones.cancelar' %}
+              <li class="nav-group {% if 'transacciones' in request.resolver_match.app_name %}show{% endif %}">
+                <a class="nav-link nav-group-toggle" href="#">
+                  <i class="nav-icon bi bi-arrow-left-right"></i>
+                  Transferencias
+                </a>
+                <ul class="nav-group-items compact">
+                  {% if request.user|has_permission:'transacciones.list' %}
+                  <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'transacciones_list' %}active{% endif %}"
+                       href="{% url 'transacciones:transacciones_list' %}">
+                      <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                      Historial
+                    </a>
+                  </li>
+                  {% endif %}
+                  {% if request.user|has_permission:'transacciones.create' %}
+                  <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'transaccion_create' %}active{% endif %}"
+                       href="{% url 'transacciones:transaccion_create' %}">
+                      <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                      Nueva Transferencia
+                    </a>
+                  </li>
+                  {% endif %}
+                </ul>
+              </li>
+      {% endif %}
+
         {% if request.user|has_permission:'usuarios.list' %}
         <li class="nav-group {% if 'usuarios' in request.resolver_match.url_name or 'usuario' in request.resolver_match.url_name %}show{% endif %}">
           <a class="nav-link nav-group-toggle" href="#">

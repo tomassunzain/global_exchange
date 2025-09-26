@@ -41,6 +41,11 @@ def crear_permisos(apps, schema_editor):
         ("roles.restore", "Restaurar rol"),
         ("roles.assign_to_user", "Asignar rol a usuario"),
         ("usuarios.asignar_clientes", "Asignar clientes a usuario"),
+        # transferencias
+        ("transacciones.list", "Listar transferencias"),
+        ("transacciones.create", "Crear transferencia"),
+        ("transacciones.confirmar", "Confirmar transferencia"),
+        ("transacciones.cancelar", "Cancelar transferencia"),
     ]
     for code, desc in permisos:
         Permission.objects.get_or_create(code=code, defaults={"description": desc})
@@ -55,6 +60,7 @@ def eliminar_permisos(apps, schema_editor):
         "payments.list_methods", "payments.create_method", "payments.edit_method", "payments.delete_method",
         "usuarios.restore", "usuarios.create", "usuarios.list", "usuarios.edit", "usuarios.delete",
         "roles.list", "roles.edit", "roles.delete", "roles.restore", "roles.assign_to_user", "usuarios.asignar_clientes",
+        "transacciones.list", "transacciones.create", "transacciones.confirmar","transacciones.cancelar",
     ]
     Permission.objects.filter(code__in=codes).delete()
 

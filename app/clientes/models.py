@@ -9,6 +9,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
+from django.db.models import Sum, Case, When, F
 from commons.enums import EstadoRegistroEnum
 
 
@@ -51,6 +52,20 @@ class Cliente(models.Model):
             str: Nombre del cliente con el segmento entre paréntesis.
         """
         return f"{self.nombre} ({self.get_tipo_display()})"
+
+    def get_balance(self, moneda):
+        from transaccion.models import Movimiento
+        result = Movimiento.objects.filter(
+            cliente=self, moneda=moneda
+        ).aggregate(
+            balance=Sum(
+                Case(
+                    When(tipo="CREDITO", then=F("monto")),
+                    When(tipo="DEBITO", then=F("monto") * -1),
+                )
+            )
+        )
+        return result["balance"] or 0
 
 
 class TasaComision(models.Model):
@@ -241,3 +256,34 @@ class TasaComision(models.Model):
             TasaComision | None: Objeto de tasa de comisión vigente o None.
         """
         return cls.vigente_para_tipo(cliente.tipo, fecha=fecha)
+
+class LimitePYG(models.Model):
+    """
+    Máximo permitido por operación en PYG para un cliente.
+    (Manténlo simple al inicio: límite por operación. Si luego querés
+     diario/mensual, agregamos campos opcionales.)
+    """
+    cliente = models.OneToOneField("clientes.Cliente", on_delete=models.CASCADE)
+    max_por_operacion = models.DecimalField(max_digits=18, decimal_places=2)
+    max_mensual = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+
+    def __str__(self):
+        return f"Limite PYG {self.cliente}: {self.max_por_operacion}"
+
+
+class LimiteMoneda(models.Model):
+    """
+    Límites por MONEDA EXTRANJERA para el cliente.
+    Por ahora: por operación mensual
+    """
+    cliente = models.ForeignKey("clientes.Cliente", on_delete=models.CASCADE)
+    moneda = models.ForeignKey("monedas.Moneda", on_delete=models.CASCADE)
+    max_por_operacion = models.DecimalField(max_digits=18, decimal_places=2)  # p.ej. 5,000 USD
+
+    max_mensual = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        unique_together = ("cliente", "moneda")
+
+    def __str__(self):
+        return f"Limite {self.cliente} - {self.moneda}"

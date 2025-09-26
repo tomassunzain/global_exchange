@@ -21,6 +21,7 @@ from .models import Role, UserRole
 from commons.enums import EstadoRegistroEnum
 from clientes.models import Cliente
 from monedas.models import TasaCambio, Moneda
+from transaccion.models import Transaccion
 
 User = get_user_model()
 
@@ -62,6 +63,7 @@ def dashboard_view(request):
         # Obtener totales para las tarjetas
         total_monedas = Moneda.objects.filter(activa=True).count()
         total_cotizaciones = TasaCambio.objects.count()
+        total_transacciones = Transaccion.objects.count()
 
         context.update({
             'total_usuarios': total_usuarios,
@@ -71,6 +73,7 @@ def dashboard_view(request):
             'ultimas_cotizaciones': ultimas_cotizaciones,
             'total_monedas': total_monedas,
             'total_cotizaciones': total_cotizaciones,
+            'total_transacciones': total_transacciones,
         })
 
     return render(request, "dashboard.html", context)

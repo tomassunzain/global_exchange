@@ -49,6 +49,8 @@ class MedioAcreditacion(models.Model):
         default=TipoMedioAcreditacionEnum.CUENTA_BANCARIA.value
     )
 
+    #TODO unificar modelos a uno generico con payments
+
     # Campos para Cuenta Bancaria
     titular_cuenta = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre del titular")
     tipo_cuenta = models.CharField(max_length=50, blank=True, null=True, verbose_name="Tipo de cuenta")
