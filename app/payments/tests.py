@@ -53,7 +53,7 @@ class PaymentMethodViewsTest(TestCase):
 		self.user = User.objects.create_user(email="test@test.com", password="1234")
 		self.cliente = Cliente.objects.create(nombre="Cliente Test", tipo="MIN")
 		self.cliente.usuarios.add(self.user)
-		self.client.login(email="test@test.com", password="1234")
+		self.client.force_login(self.user)
 		self.pm1 = PaymentMethod.objects.create(
 			cliente=self.cliente,
 			payment_type=PaymentTypeEnum.CUENTA_BANCARIA.value,
@@ -79,8 +79,9 @@ class PaymentMethodViewsTest(TestCase):
 			'payment_type': PaymentTypeEnum.TARJETA.value,
 			'tarjeta_nombre': 'Test User',
 			'tarjeta_numero': '4111111111111111',
-			'tarjeta_vencimiento': '12/30',
+			'tarjeta_vencimiento': '2030-12',
 			'tarjeta_cvv': '123',
+			'tarjeta_marca': 'Visa',
 		})
 		self.assertEqual(PaymentMethod.objects.filter(tarjeta_nombre='Test User').count(), 1)
 
@@ -93,7 +94,8 @@ class PaymentMethodViewsTest(TestCase):
 		response = self.client.post(url, {
 			'payment_type': PaymentTypeEnum.BILLETERA.value,
 			'proveedor_billetera': 'MercadoPago',
-			'billetera_email_telefono': 'nuevo@mail.com',
+			'billetera_email_telefono': 'nuevo@gmail.com',
+			'billetera_titular': 'Juan Perez',
 		})
 		self.pm2.refresh_from_db()
 		self.assertEqual(self.pm2.proveedor_billetera, 'MercadoPago')
