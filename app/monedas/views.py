@@ -27,16 +27,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
 from .forms import MonedaForm, TasaCambioForm
 from .models import Moneda, TasaCambio
 from clientes.models import TasaComision
-
+from usuarios.decorators import role_required
+from django.http import JsonResponse
+from django.core import serializers
 
 # -----------------------------
 # Endpoints JSON
 # -----------------------------
 def cotizaciones_json(request):
+    from .models import TasaCambio
     """
     Devuelve todas las cotizaciones registradas en formato JSON.
 
@@ -47,8 +49,9 @@ def cotizaciones_json(request):
     """
     try:
         cotizaciones = TasaCambio.objects.select_related('moneda').order_by('-fecha_creacion')
-        data = [
-            {
+        data = []
+        for tasa in cotizaciones:
+            data.append({
                 'id': tasa.id,
                 'moneda': tasa.moneda.codigo if tasa.moneda else None,
                 'base': getattr(tasa, 'base_codigo', 'PYG'),
@@ -56,9 +59,7 @@ def cotizaciones_json(request):
                 'venta': float(tasa.venta) if tasa.venta else None,
                 'fecha': tasa.fecha_creacion.strftime('%Y-%m-%d %H:%M:%S') if tasa.fecha_creacion else None,
                 'fuente': tasa.fuente,
-            }
-            for tasa in cotizaciones
-        ]
+            })
         return JsonResponse({'cotizaciones': data})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -118,7 +119,7 @@ def moneda_create(request):
         form = MonedaForm(request.POST)
         if form.is_valid():
             try:
-                form.save()
+                obj = form.save()
                 messages.success(request, 'Moneda creada exitosamente.')
                 return redirect('monedas:monedas_list')
             except Exception as e:
@@ -146,7 +147,7 @@ def moneda_edit(request, moneda_id):
         form = MonedaForm(request.POST, instance=moneda)
         if form.is_valid():
             try:
-                form.save()
+                obj = form.save()
                 messages.success(request, 'Moneda actualizada.')
                 return redirect('monedas:monedas_list')
             except Exception as e:
@@ -226,7 +227,12 @@ def tasas_list(request):
         qs = qs.filter(activa=True)
 
     monedas = Moneda.objects.all().filter(activa=True, es_base=False).order_by('codigo')
-    ctx = {'tasas': qs, 'monedas': monedas, 'moneda_id': moneda_id or '', 'solo_activas': solo_activas}
+    ctx = {
+        'tasas': qs,
+        'monedas': monedas,
+        'moneda_id': moneda_id or '',
+        'solo_activas': solo_activas,
+    }
     return render(request, 'monedas/tasas_list.html', ctx)
 
 
@@ -322,5 +328,5 @@ def tasa_marcar_activa(request, tasa_id):
     tasa = get_object_or_404(TasaCambio, pk=tasa_id)
     tasa.activa = True
     tasa.save()
-    messages.success(request, 'Tasa marcada como activa.')
+    messages.success(request, f'Tasa {tasa.id} marcada como activa para {tasa.moneda.codigo}.')
     return redirect('monedas:tasas_list')
