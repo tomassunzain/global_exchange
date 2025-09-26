@@ -113,7 +113,7 @@ class TasaCambioForm(forms.ModelForm):
         a monedas activas que no sean base.
         """
         super().__init__(*args, **kwargs)
-        self.fields['moneda'].queryset = Moneda.objects.filter(activa=True, es_base=False)
+        self.fields['moneda'].queryset = Moneda.objects.all().filter(activa=True, es_base=False)
 
     def clean(self):
         """
