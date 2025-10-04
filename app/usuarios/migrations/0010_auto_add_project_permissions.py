@@ -15,15 +15,11 @@ def crear_permisos(apps, schema_editor):
         ("comisiones.create", "Crear tasa de comisión"),
         ("comisiones.edit", "Editar tasa de comisión"),
         ("comisiones.delete", "Eliminar tasa de comisión"),
-        ("comisiones.restore", "Restaurar tasa de comisión"),
         # monedas
         ("monedas.list", "Ver lista de monedas"),
         ("monedas.create", "Crear moneda"),
         ("monedas.edit", "Editar moneda"),
         ("monedas.delete", "Eliminar moneda"),
-        ("monedas.tasa_cambio", "Ver tasas de cambio"),
-        # exchange este no esta bien todavia, cuando se use el tema de comision y eso veo
-        ("exchange.view_rates", "Ver tasas de exchange"),
         # payments
         ("payments.list_methods", "Ver métodos de pago"),
         ("payments.create_method", "Crear método de pago"),
