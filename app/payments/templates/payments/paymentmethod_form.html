@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container mt-4">
     {% if form.errors %}
-    <div id="error-box" class="alert alert-danger" style="background:#ffe5e5; border:2px solid #d32f2f; color:#d32f2f; padding:16px; border-radius:8px; margin-bottom:20px;">
+    <div id="error-box" class="alert alert-danger" style="background:var(--cui-danger-bg-subtle); border:2px solid var(--cui-danger); color:var(--cui-danger); padding:16px; border-radius:8px; margin-bottom:20px;">
         <strong>Por favor corrige los siguientes errores:</strong>
         <ul class="mb-0" style="margin-top:10px;">
         {% for field, errors in form.errors.items %}
