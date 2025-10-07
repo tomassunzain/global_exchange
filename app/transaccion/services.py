@@ -52,11 +52,11 @@ def calcular_transaccion(cliente, tipo, moneda, monto_operado):
         comision = comision_buy
         monto_pyg = monto_operado * tc_compra
     elif tipo == TipoTransaccionEnum.VENTA:
-        # VENTA: de PYG a moneda extranjera
+        # VENTA: de moneda extranjera a PYG
         tc_venta = pb + comision_sell - (comision_sell * descuento / 100)
         tasa_aplicada = tc_venta
         comision = comision_sell
-        monto_pyg = monto_operado / tc_venta
+        monto_pyg = monto_operado * tc_venta
     else:
         raise ValidationError("Tipo de transacción inválido.")
 
@@ -177,9 +177,58 @@ def _check_limit_moneda(cliente, moneda, monto_operado):
 def validate_limits(cliente, moneda_operada, monto_operado, monto_pyg):
     """
     Se llama ANTES de crear la transacción/movimientos.
-    Aplica DOS validaciones:
+    Aplica validaciones:
       1) PYG por operación
       2) Moneda extranjera (por operación + opcional diario/mensual)
+      3) Límites diarios y mensuales por tipo de cliente (CLIENT_LIMITS)
     """
+    from django.db.models import Sum
+    from django.utils import timezone
+    from commons.limits import CLIENT_LIMITS
+    from transaccion.models import Transaccion
+
     _check_limit_pyg(cliente, monto_pyg)
     _check_limit_moneda(cliente, moneda_operada, monto_operado)
+
+    # --- Validación de límites diarios y mensuales por tipo de cliente ---
+    # Mapeo de tipo de cliente a clave de CLIENT_LIMITS
+    tipo_map = {
+        'MIN': 'minorista',
+        'CORP': 'corporativo',
+        'VIP': 'vip',
+    }
+    tipo_cliente = tipo_map.get(getattr(cliente, 'tipo', 'MIN'), 'minorista')
+    limites = CLIENT_LIMITS.get(tipo_cliente, CLIENT_LIMITS['minorista'])
+
+    hoy = timezone.now().date()
+    inicio_mes = hoy.replace(day=1)
+
+    estados_validos = [EstadoTransaccionEnum.PENDIENTE, EstadoTransaccionEnum.PAGADA]
+    # Suma de transacciones del día (PYG) por moneda y estado válido
+    total_diario = Transaccion.objects.filter(
+        cliente=cliente,
+        moneda=moneda_operada,
+        fecha__date=hoy,
+        estado__in=estados_validos
+    ).aggregate(total=Sum('monto_pyg'))['total'] or 0
+
+    # Suma de transacciones del mes (PYG) por moneda y estado válido
+    total_mensual = Transaccion.objects.filter(
+        cliente=cliente,
+        moneda=moneda_operada,
+        fecha__date__gte=inicio_mes,
+        fecha__date__lte=hoy,
+        estado__in=estados_validos
+    ).aggregate(total=Sum('monto_pyg'))['total'] or 0
+
+    from decimal import Decimal
+    limite_diario = Decimal(str(limites['diario']))
+    limite_mensual = Decimal(str(limites['mensual']))
+    total_diario = Decimal(total_diario)
+    total_mensual = Decimal(total_mensual)
+    monto_pyg = Decimal(monto_pyg)
+
+    if total_diario + monto_pyg > limite_diario:
+        raise ValidationError(f"Límite diario alcanzado | total_diario: {total_diario} + monto_pyg: {monto_pyg} > limite_diario: {limite_diario}")
+    if total_mensual + monto_pyg > limite_mensual:
+        raise ValidationError(f"Límite mensual alcanzado | total_mensual: {total_mensual} + monto_pyg: {monto_pyg} > limite_mensual: {limite_mensual}")
