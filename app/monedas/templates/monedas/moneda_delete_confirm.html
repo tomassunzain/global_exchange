@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% load usuarios_extras %}
 {% block title %}Inactivar Moneda{% endblock %}
 
 {% block content %}
+{% if request.user|has_permission:'monedas.delete' %}
 <div class="container mt-4">
   <h2>Inactivar Moneda</h2>
   <p>¿Confirmás eliminar <strong>{{ moneda.codigo }} - {{ moneda.nombre }}</strong>?</p>
@@ -12,4 +14,5 @@
     <a href="{% url 'monedas:monedas_list' %}" class="btn btn-secondary">Cancelar</a>
   </form>
 </div>
+{% endif %}
 {% endblock %}

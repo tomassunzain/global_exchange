@@ -16,8 +16,19 @@ from monedas.models import Moneda
 from commons.enums import EstadoTransaccionEnum, TipoTransaccionEnum, TipoMovimientoEnum
 
 def transacciones_list(request):
+    order = request.GET.get('order')
+    dir = request.GET.get('dir')
+    cliente_id = request.GET.get('cliente')
     transacciones = Transaccion.objects.all().select_related("cliente", "moneda")
-    return render(request, "transacciones/transacciones_list.html", {"transacciones": transacciones})
+    if cliente_id:
+        transacciones = transacciones.filter(cliente_id=cliente_id)
+    if order == 'fecha':
+        if dir == 'asc':
+            transacciones = transacciones.order_by('fecha')
+        else:
+            transacciones = transacciones.order_by('-fecha')
+    clientes = Cliente.objects.all()
+    return render(request, "transacciones/transacciones_list.html", {"transacciones": transacciones, "clientes": clientes, "cliente_id": cliente_id})
 
 def confirmar_view(request, pk):
     transaccion = get_object_or_404(Transaccion, pk=pk)
@@ -51,17 +62,19 @@ def transaccion_create(request):
             from .services import calcular_transaccion
             try:
                 calculo = calcular_transaccion(cliente, tipo, moneda_operada, monto_operado)
+                transaccion = crear_transaccion(
+                    cliente, tipo, moneda_operada, monto_operado,
+                    calculo['tasa_aplicada'], calculo['comision'], calculo['monto_pyg'],
+                    medio_pago
+                )
+                messages.success(request, f"Transacción {transaccion.id} creada correctamente.")
+                return redirect("transacciones:transacciones_list")
+            except ValidationError as e:
+                messages.error(request, str(e))
             except Exception as e:
                 messages.error(request, f"Error en el cálculo: {e}")
-                return render(request, "transacciones/transaccion_form.html", {"form": form})
-
-            transaccion = crear_transaccion(
-                cliente, tipo, moneda_operada, monto_operado,
-                calculo['tasa_aplicada'], calculo['comision'], calculo['monto_pyg'],
-                medio_pago
-            )
-            messages.success(request, f"Transacción {transaccion.id} creada correctamente.")
-            return redirect("transacciones:transacciones_list")
+        # Si hay error, vuelve a mostrar el formulario con mensajes
+        return render(request, "transacciones/transaccion_form.html", {"form": form})
     else:
         form = TransaccionForm()
 

@@ -104,6 +104,7 @@
     </div>
   </div>
 
+  {% if request.user|has_permission:'simulador.view' %}
   <!-- Simulador de Conversiones -->
   <div class="row mb-4">
     <div class="col-12">
@@ -140,6 +141,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
   <!-- Estadísticas principales -->
   <div class="row mb-4">
@@ -228,36 +230,46 @@
         </div>
         <div class="card-body">
           <div class="row g-3">
+            {% if request.user|has_permission:'usuarios.list' %}
             <div class="col-12 col-md-6 col-lg-3">
               <a href="{% url 'usuarios:usuarios_list' %}" class="btn btn-outline-primary w-100">
                 <i class="bi bi-people d-block fs-3 mb-2"></i>
                 Ver Usuarios
               </a>
             </div>
+            {% endif %}
+            {% if request.user|has_permission:'cotizaciones.list' %}
             <div class="col-6">
               <a href="{% url 'monedas:tasas_list' %}" class="btn btn-outline-success w-100">
                 <i class="bi bi-graph-up d-block fs-3 mb-2"></i>
                 Ver Cotizaciones
               </a>
             </div>
+            {% endif %}
+            {% if request.user|has_permission:'cotizaciones.create' %}
             <div class="col-6">
               <a href="{% url 'monedas:tasa_create' %}" class="btn btn-outline-info w-100">
                 <i class="bi bi-plus-circle d-block fs-3 mb-2"></i>
                 Nueva Cotización
               </a>
             </div>
+            {% endif %}
+            {% if request.user|has_permission:'monedas.list' %}
             <div class="col-6">
               <a href="{% url 'monedas:monedas_list' %}" class="btn btn-outline-warning w-100">
                 <i class="bi bi-cash-coin d-block fs-3 mb-2"></i>
                 Gestionar Monedas
               </a>
             </div>
+            {% endif %}
+            {% if request.user|has_permission:'transacciones.list' %}
             <div class="col-6">
               <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-outline-danger w-100">
                 <i class="bi bi-arrow-left-right d-block fs-3 mb-2"></i>
                 Transferencias
               </a>
             </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -326,15 +338,15 @@
   width: 1rem;
   height: 1rem;
   border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 0 0 3px #dee2e6;
+  border: 3px solid var(--cui-light);
+  box-shadow: 0 0 0 3px var(--cui-border-color);
 }
 
 .timeline-content {
-  background: #f8f9fa;
+  background: var(--cui-tertiary-bg);
   padding: 1rem;
   border-radius: 0.5rem;
-  border-left: 3px solid #dee2e6;
+  border-left: 3px solid var(--cui-border-color);
 }
 
 .timeline-title {
@@ -344,7 +356,7 @@
 
 .timeline-text {
   margin-bottom: 0.5rem;
-  color: #6c757d;
+  color: var(--cui-secondary);
 }
 
 /* Estilos para la tabla de cotizaciones */

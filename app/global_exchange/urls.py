@@ -46,9 +46,6 @@ urlpatterns = [
     # --- Clientes ---
     path('clientes/', include(('clientes.urls', 'clientes'), namespace='clientes')),
 
-    # --- Exchange ---
-    path('exchange/', include(('exchange.urls', 'exchange'), namespace='exchange')),
-
     # --- Documentación generada con Sphinx ---
     path("docs/", RedirectView.as_view(url="/docs/index.html", permanent=False)),
     re_path(
@@ -63,13 +60,4 @@ urlpatterns = [
     path('payments/', include('payments.urls', namespace='payments')),
     path('medios_acreditacion/', include('medios_acreditacion.urls', namespace='medios_acreditacion')),
     path('transacciones/', include('transaccion.urls')),
-
-    # --- Pagos ---
-    path('payments/', include(('payments.urls', 'payments'), namespace='payments')),
-
-    # --- Medios de acreditación ---
-    path(
-        'medios_acreditacion/',
-        include(('medios_acreditacion.urls', 'medios_acreditacion'), namespace='medios_acreditacion')
-    ),
 ]

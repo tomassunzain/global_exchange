@@ -18,6 +18,22 @@
           <strong>Historial de Transacciones</strong>
         </div>
         <div class="card-body">
+          <form method="get" class="mb-3 d-flex align-items-center" id="filtroClienteForm">
+            <label for="cliente" class="me-2 mb-0">Filtrar por cliente:</label>
+            <select name="cliente" id="cliente" class="form-select form-select-sm w-auto me-2" onchange="document.getElementById('filtroClienteForm').submit();">
+              <option value="">Todos</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}" {% if c.id|stringformat:'s' == cliente_id %}selected{% endif %}>{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+            {# Mantener los parámetros de orden si existen #}
+            {% if request.GET.order %}
+              <input type="hidden" name="order" value="{{ request.GET.order }}">
+            {% endif %}
+            {% if request.GET.dir %}
+              <input type="hidden" name="dir" value="{{ request.GET.dir }}">
+            {% endif %}
+          </form>
           {% if transacciones %}
             <div class="table-responsive">
               <table class="table table-striped table-hover">
@@ -31,7 +47,20 @@
                     <th>Monto PYG</th>
                     <th>Tasa</th>
                     <th>Estado</th>
-                    <th>Fecha</th>
+                    <th>
+                      Fecha
+                      <a href="?{% if cliente_id %}cliente={{ cliente_id }}&{% endif %}{% if request.GET.order == 'fecha' and request.GET.dir == 'asc' %}order=fecha&dir=desc{% else %}order=fecha&dir=asc{% endif %}" class="btn btn-link btn-sm p-0 align-baseline" title="Ordenar por fecha">
+                        {% if request.GET.order == 'fecha' %}
+                          {% if request.GET.dir == 'asc' %}
+                            <i class="bi bi-arrow-down"></i>
+                          {% else %}
+                            <i class="bi bi-arrow-up"></i>
+                          {% endif %}
+                        {% else %}
+                          <i class="bi bi-arrow-down-up"></i>
+                        {% endif %}
+                      </a>
+                    </th>
                     <th class="text-center">Acciones</th>
                   </tr>
                 </thead>

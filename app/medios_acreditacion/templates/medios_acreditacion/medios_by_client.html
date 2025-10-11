@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load usuarios_extras %}
+{% block title %}Medios de Acreditación por Cliente{% endblock %}
 {% block content %}
 <div class="container mt-4">
     <h4 class="fw-bold mb-4">Medios de Acreditación por Cliente</h4>
@@ -20,14 +22,20 @@
                                 {% elif medio.tipo_medio == 'billetera' %}
                                     <span class="me-2">Billetera: {{ medio.proveedor_billetera }} - {{ medio.billetera_email_telefono }}</span>
                                 {% endif %}
+                                {% if request.user|has_permission:'medios_acreditacion.edit' %}
                                 <a href="{% url 'medios_acreditacion:medioacreditacion_update' medio.pk %}" class="btn btn-outline-warning btn-sm ms-auto me-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                                {% endif %}
+                                {% if request.user|has_permission:'medios_acreditacion.delete' %}
                                 <a href="{% url 'medios_acreditacion:medioacreditacion_delete' medio.pk %}" class="btn btn-outline-danger btn-sm" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                {% endif %}
                             </li>
                             {% empty %}
                             <li class="text-muted">Sin medios de acreditación</li>
                             {% endfor %}
                         </ul>
+                        {% if request.user|has_permission:'medios_acreditacion.create' %}
                         <a href="{% url 'medios_acreditacion:medioacreditacion_create' %}?cliente={{ cliente.id }}" class="btn btn-outline-success w-100"><i class="bi bi-plus-lg"></i> Añadir Medio</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
