@@ -52,9 +52,13 @@
           {% endif %}
         </td>
         <td>
-          <a href="{% url 'monedas:moneda_edit' m.id %}" class="btn btn-sm btn-warning">Editar</a>
-          <a href="{% url 'monedas:moneda_delete' m.id %}" class="btn btn-sm {% if m.activa %}btn-danger{% else %}btn-outline-secondary{% endif %}">
-            {% if m.activa %}Inactivar{% else %}Inactiva{% endif %}
+          {% if request.user|has_permission:'monedas.edit' %}
+            <a href="{% url 'monedas:moneda_edit' m.id %}" class="btn btn-sm btn-warning">Editar</a>
+          {% endif %}
+          {% if request.user|has_permission:'monedas.delete' %}
+            <a href="{% url 'monedas:moneda_delete' m.id %}" class="btn btn-sm {% if m.activa %}btn-danger{% else %}btn-outline-secondary{% endif %}">
+              {% if m.activa %}Inactivar{% else %}Inactiva{% endif %}
+          {% endif %}
           </a>
         </td>
       </tr>
