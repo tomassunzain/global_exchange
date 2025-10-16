@@ -15,6 +15,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions","django.contrib.messages","django.contrib.staticfiles",
     "widget_tweaks",
     "usuarios","clientes","commons","payments","monedas","medios_acreditacion", "transaccion",
+    # MFA app
+    "mfa",
 ]
 
 AUTH_USER_MODEL = "usuarios.User"
@@ -82,6 +84,11 @@ for static_dir in glob(str(BASE_DIR / "app" / "*" / "static")):
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# MFA defaults
+MFA_DEFAULT_TTL_SECONDS = int(os.getenv('MFA_DEFAULT_TTL_SECONDS', '30'))
+MFA_CODE_LENGTH = int(os.getenv('MFA_CODE_LENGTH', '6'))
+MFA_MAX_ATTEMPTS = int(os.getenv('MFA_MAX_ATTEMPTS', '5'))
 
 _csrf = os.getenv("CSRF_TRUSTED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = _csrf.split(",") if _csrf else []

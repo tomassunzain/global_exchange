@@ -85,6 +85,13 @@ class UserForm(forms.ModelForm):
             user.save()
         return user
 
+    # Campo para habilitar MFA desde el formulario de edición
+    mfa_enabled = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Habilitar MFA (inicio de sesión)'
+    )
+
     class Meta:
         model = User
         fields = ["email", "is_active"]
@@ -101,6 +108,37 @@ class UserForm(forms.ModelForm):
             'email': 'Dirección de correo electrónico única',
             'is_active': 'Solo usuarios activos pueden iniciar sesión'
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Inicializar el valor del campo mfa_enabled desde UserMfa si existe
+        try:
+            if self.instance and getattr(self.instance, 'pk', None):
+                cfg = self.instance.mfa_config
+                self.fields['mfa_enabled'].initial = bool(cfg.enabled)
+        except Exception:
+            # No existe configuración MFA aún
+            self.fields['mfa_enabled'].initial = False
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        # Guardar o actualizar la configuración MFA sólo si el campo estuvo presente en el POST real
+        # (evita que una actualización sin el campo lo marque como False accidentalmente)
+        if self.is_bound and 'mfa_enabled' in self.data:
+            mfa_enabled = self.cleaned_data.get('mfa_enabled', False)
+            try:
+                from mfa.models import UserMfa
+                cfg, created = UserMfa.objects.get_or_create(user=user, defaults={'enabled': False, 'method': 'email', 'destination': user.email})
+                if cfg.enabled != bool(mfa_enabled):
+                    cfg.enabled = bool(mfa_enabled)
+                    # si se habilita por primera vez, asegurarse de que destination esté presente
+                    if not cfg.destination:
+                        cfg.destination = user.email
+                    cfg.save()
+            except Exception:
+                # Si por alguna razón no existe la app mfa, simplemente ignorar
+                pass
+        return user
 
 
 class UserCreateForm(forms.ModelForm):
@@ -163,6 +201,27 @@ class UserCreateForm(forms.ModelForm):
         user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
+        return user
+
+    # Permitir habilitar MFA al crear usuario desde panel
+    mfa_enabled = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Habilitar MFA (inicio de sesión)'
+    )
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+            # Crear configuración MFA si fue solicitada
+            try:
+                if self.cleaned_data.get('mfa_enabled'):
+                    from mfa.models import UserMfa
+                    UserMfa.objects.create(user=user, enabled=True, method='email', destination=user.email)
+            except Exception:
+                pass
         return user
 
 

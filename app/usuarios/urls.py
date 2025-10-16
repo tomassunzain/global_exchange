@@ -15,6 +15,7 @@ urlpatterns = [
 
     # Autenticación
     path('login/', views.login_view, name='login'),
+    path('login/verify/', views.login_verify, name='login_verify'),
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro, name='registro'),  # Registro público
     path('verificar/<uidb64>/<token>/', views.verificar_email, name='verificar'),
@@ -35,6 +36,10 @@ urlpatterns = [
 
     #Asignar Clientes a un Usuario
     path("<int:user_id>/asignar-clientes/", views.asignar_clientes_a_usuario, name="asignar_clientes"),
+
+    # Perfil del usuario autenticado
+    path('perfil/', views.perfil, name='perfil'),
+    path('seguridad/', views.security_settings, name='security_settings'),
 
     # Gestión de roles
     path('roles/', views.roles_list, name='roles_list'),

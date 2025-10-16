@@ -60,4 +60,6 @@ urlpatterns = [
     path('payments/', include('payments.urls', namespace='payments')),
     path('medios_acreditacion/', include('medios_acreditacion.urls', namespace='medios_acreditacion')),
     path('transacciones/', include('transaccion.urls')),
+    # MFA endpoints (generate/verify) - used for testing OTP by terminal
+    path('mfa/', include(('mfa.urls', 'mfa'), namespace='mfa')),
 ]

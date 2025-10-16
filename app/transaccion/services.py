@@ -122,6 +122,29 @@ def cancelar_transaccion(transaccion):
     transaccion.save(update_fields=["estado"])
     return transaccion
 
+
+def confirmar_transaccion_con_otp(transaccion, user, raw_code, context_match=None):
+    """
+    Verifica un OTP para la transacción (purpose='transaction_debit') y si es válido
+    procede a confirmar la transacción (crear movimiento y marcar PAGADA).
+
+    Esta función no realiza redirecciones ni I/O; lanza ValidationError en caso de fallo.
+    """
+    from django.core.exceptions import ValidationError
+    from mfa.services import verify_otp
+
+    # Solo confirmar si está pendiente
+    if transaccion.estado != EstadoTransaccionEnum.PENDIENTE:
+        raise ValidationError("Solo transacciones pendientes pueden confirmarse.")
+
+    # Verificar OTP
+    ok, otp = verify_otp(user, 'transaction_debit', raw_code, context_match=context_match)
+    if not ok:
+        raise ValidationError('OTP inválido para la transacción.')
+
+    # Si OK, delegar en confirmar_transaccion existente para crear movimiento y marcar PAGADA
+    return confirmar_transaccion(transaccion)
+
 def _check_limit_pyg(cliente, monto_pyg):
     """
     Límite por operación en PYG.
