@@ -23,6 +23,14 @@ EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.Em
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@tu-dominio.com")
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
 
+# === Stripe (modo test) ===
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")  # sk_test_...
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")  # whsec_...
+
+# Usamos SITE_URL para formar las URLs de retorno
+STRIPE_SUCCESS_URL = os.getenv("STRIPE_SUCCESS_URL", f"{SITE_URL}/pagos/success/")
+STRIPE_CANCEL_URL  = os.getenv("STRIPE_CANCEL_URL",  f"{SITE_URL}/pagos/cancel/")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

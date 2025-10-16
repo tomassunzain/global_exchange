@@ -26,6 +26,7 @@
               <i class="bi bi-cash-coin"></i> Crear Nueva Transacción
             {% endif %}
           </strong>
+
           <div class="d-flex align-items-center gap-3">
             <span id="timeout-timer" class="text-muted small">
               <i class="bi bi-clock"></i> Sesión caduca en <span id="timeout-seconds">120</span>s
@@ -35,7 +36,27 @@
             </a>
           </div>
         </div>
+
         <div class="card-body">
+
+          {# --- Bloque Stripe: mostrar link de pago solo si aplica (TC + PENDIENTE) --- #}
+          {% if transaccion and transaccion.estado == "PENDIENTE" and transaccion.medio_pago and transaccion.medio_pago.tipo == "TC" %}
+            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+              <div>
+                <i class="bi bi-credit-card"></i>
+                Esta transacción usará <strong>Tarjeta de Crédito (Stripe)</strong>.
+                Generá el link de pago y aguardá la confirmación por <em>webhook</em>.
+                {% if transaccion.stripe_status %}
+                  <span class="badge bg-info ms-2">Stripe: {{ transaccion.stripe_status }}</span>
+                {% endif %}
+              </div>
+              <a class="btn btn-sm btn-primary"
+                 href="{% url 'transacciones:iniciar_pago_tarjeta' transaccion.id %}">
+                <i class="bi bi-link-45deg"></i> Link de pago (Stripe)
+              </a>
+            </div>
+          {% endif %}
+
           <form method="post">
             {% csrf_token %}
 
@@ -148,17 +169,24 @@
             <div id="resultado-calculo" class="alert alert-info d-none"></div>
 
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">
-                {% if transaccion %}
-                  <i class="bi bi-check-lg"></i> Actualizar Transacción
-                {% else %}
-                  <i class="bi bi-cash-coin"></i> Realizar Transacción
-                {% endif %}
-              </button>
+              {% if transaccion and transaccion.medio_pago and transaccion.medio_pago.tipo == "TC" %}
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-save"></i> Guardar cambios
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-primary">
+                  {% if transaccion %}
+                    <i class="bi bi-check-lg"></i> Actualizar Transacción
+                  {% else %}
+                    <i class="bi bi-cash-coin"></i> Realizar Transacción
+                  {% endif %}
+                </button>
+              {% endif %}
               <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-secondary">
                 <i class="bi bi-x-lg"></i> Cancelar
               </a>
             </div>
+
           </form>
         </div>
       </div>
@@ -169,7 +197,24 @@
 
 {% block extra_js %}
 <script>
-  // Temporizador de sesión
+  // ---- CSRF (cookie) ----
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const CSRF_TOKEN = getCookie('csrftoken');
+
+  // ---- Temporizador de sesión ----
   let seconds = 120;
   const timerSpan = document.getElementById('timeout-seconds');
   const interval = setInterval(function() {
@@ -182,44 +227,50 @@
     }
   }, 1000);
 
-  // Cálculo de cotización
-  document.getElementById("btn-calcular").addEventListener("click", function() {
-    const cliente = document.getElementById("id_cliente").value;
-    const tipo = document.getElementById("id_tipo").value;
-    const moneda = document.getElementById("id_moneda").value;
-    const monto = document.getElementById("id_monto_operado").value;
+  // ---- Cálculo de cotización ----
+  const btnCalcular = document.getElementById("btn-calcular");
+  if (btnCalcular) {
+    btnCalcular.addEventListener("click", function() {
+      const cliente = document.getElementById("id_cliente").value;
+      const tipo    = document.getElementById("id_tipo").value;
+      const moneda  = document.getElementById("id_moneda").value;
+      const monto   = document.getElementById("id_monto_operado").value;
 
-    if (!cliente || !tipo || !moneda || !monto) {
-      alert("Complete cliente, tipo, moneda y monto antes de calcular.");
-      return;
-    }
+      if (!cliente || !tipo || !moneda || !monto) {
+        alert("Complete cliente, tipo, moneda y monto antes de calcular.");
+        return;
+      }
 
-    fetch("{% url 'transacciones:calcular_api' %}", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": "{{ csrf_token }}"
-      },
-      body: JSON.stringify({
-        cliente: cliente,
-        tipo: tipo,
-        moneda: moneda,
-        monto_operado: monto
+      fetch("{% url 'transacciones:calcular_api' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": CSRF_TOKEN
+        },
+        body: JSON.stringify({
+          cliente: cliente,
+          tipo: tipo,
+          moneda: moneda,
+          monto_operado: monto
+        })
       })
-    })
-    .then(resp => resp.json())
-    .then(data => {
-      const div = document.getElementById("resultado-calculo");
-      div.classList.remove("d-none");
-      div.innerHTML = `
-        <strong>Tasa aplicada:</strong> ${data.tasa_aplicada}<br>
-        <strong>Comisión:</strong> ${data.comision}<br>
-        <strong>Monto en PYG:</strong> ${data.monto_pyg}
-      `;
-    })
-    .catch(err => {
-      alert("Error en cálculo: " + err);
+      .then(resp => {
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return resp.json();
+      })
+      .then(data => {
+        const div = document.getElementById("resultado-calculo");
+        div.classList.remove("d-none");
+        div.innerHTML = `
+          <strong>Tasa aplicada:</strong> ${data.tasa_aplicada}<br>
+          <strong>Comisión:</strong> ${data.comision}<br>
+          <strong>Monto en PYG:</strong> ${data.monto_pyg}
+        `;
+      })
+      .catch(err => {
+        alert("Error en cálculo: " + err);
+      });
     });
-  });
+  }
 </script>
 {% endblock %}

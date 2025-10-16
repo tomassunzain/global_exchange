@@ -14,19 +14,26 @@
   <div class="row">
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <strong>Historial de Transacciones</strong>
+          <div class="small text-muted">
+            <!-- espacio para filtros/ayuda si hace falta -->
+          </div>
         </div>
+
         <div class="card-body">
           <form method="get" class="mb-3 d-flex align-items-center" id="filtroClienteForm">
             <label for="cliente" class="me-2 mb-0">Filtrar por cliente:</label>
-            <select name="cliente" id="cliente" class="form-select form-select-sm w-auto me-2" onchange="document.getElementById('filtroClienteForm').submit();">
+            <select name="cliente" id="cliente" class="form-select form-select-sm w-auto me-2"
+                    onchange="document.getElementById('filtroClienteForm').submit();">
               <option value="">Todos</option>
               {% for c in clientes %}
-                <option value="{{ c.id }}" {% if c.id|stringformat:'s' == cliente_id %}selected{% endif %}>{{ c.nombre }}</option>
+                <option value="{{ c.id }}" {% if c.id|stringformat:'s' == cliente_id %}selected{% endif %}>
+                  {{ c.nombre }}
+                </option>
               {% endfor %}
             </select>
-            {# Mantener los parámetros de orden si existen #}
+            {# Mantener parámetros de orden si existen #}
             {% if request.GET.order %}
               <input type="hidden" name="order" value="{{ request.GET.order }}">
             {% endif %}
@@ -34,22 +41,24 @@
               <input type="hidden" name="dir" value="{{ request.GET.dir }}">
             {% endif %}
           </form>
+
           {% if transacciones %}
             <div class="table-responsive">
-              <table class="table table-striped table-hover">
+              <table class="table table-striped table-hover align-middle">
                 <thead class="table-light">
                   <tr>
                     <th>ID</th>
                     <th>Cliente</th>
                     <th>Tipo</th>
                     <th>Moneda</th>
-                    <th>Monto Operado</th>
-                    <th>Monto PYG</th>
-                    <th>Tasa</th>
+                    <th class="text-end">Monto Operado</th>
+                    <th class="text-end">Monto PYG</th>
+                    <th class="text-end">Tasa</th>
                     <th>Estado</th>
                     <th>
                       Fecha
-                      <a href="?{% if cliente_id %}cliente={{ cliente_id }}&{% endif %}{% if request.GET.order == 'fecha' and request.GET.dir == 'asc' %}order=fecha&dir=desc{% else %}order=fecha&dir=asc{% endif %}" class="btn btn-link btn-sm p-0 align-baseline" title="Ordenar por fecha">
+                      <a href="?{% if cliente_id %}cliente={{ cliente_id }}&{% endif %}{% if request.GET.order == 'fecha' and request.GET.dir == 'asc' %}order=fecha&dir=desc{% else %}order=fecha&dir=asc{% endif %}"
+                         class="btn btn-link btn-sm p-0 align-baseline" title="Ordenar por fecha">
                         {% if request.GET.order == 'fecha' %}
                           {% if request.GET.dir == 'asc' %}
                             <i class="bi bi-arrow-down"></i>
@@ -66,6 +75,7 @@
                 </thead>
                 <tbody>
                   {% for t in transacciones %}
+                    {% with estado=t.estado|default_if_none:''|lower %}
                     <tr>
                       <td><strong>{{ t.id }}</strong></td>
                       <td>{{ t.cliente.nombre }}</td>
@@ -75,45 +85,73 @@
                         </span>
                       </td>
                       <td>{{ t.moneda.codigo }}</td>
-                      <td>{{ t.monto_operado }}</td>
-                      <td>{{ t.monto_pyg }}</td>
-                      <td>{{ t.tasa_aplicada }}</td>
+                      <td class="text-end">{{ t.monto_operado }}</td>
+                      <td class="text-end">{{ t.monto_pyg }}</td>
+                      <td class="text-end">{{ t.tasa_aplicada }}</td>
                       <td>
-                        {% if t.estado == 'pendiente' %}
+                        {% if estado == 'pendiente' %}
                           <span class="badge bg-warning text-dark">Pendiente</span>
-                        {% elif t.estado == 'pagada' %}
+                        {% elif estado == 'pagada' %}
                           <span class="badge bg-success">Pagada</span>
-                        {% elif t.estado == 'cancelada' %}
+                        {% elif estado == 'cancelada' %}
                           <span class="badge bg-secondary">Cancelada</span>
-                        {% elif t.estado == 'anulada' %}
+                        {% elif estado == 'anulada' %}
                           <span class="badge bg-danger">Anulada</span>
+                        {% else %}
+                          <span class="badge bg-light text-dark">{{ t.estado }}</span>
+                        {% endif %}
+
+                        {# Badge adicional con estado de Stripe si existe #}
+                        {% if t.stripe_status %}
+                          <span class="badge bg-info ms-1">Stripe: {{ t.stripe_status }}</span>
                         {% endif %}
                       </td>
                       <td>{{ t.fecha|date:"d/m/Y H:i" }}</td>
                       <td class="text-center">
                         <div class="btn-group" role="group">
-                          {% if t.estado == 'pendiente' %}
-                            {% if request.user|has_permission:'transacciones.confirmar' %}
-                              <a href="{% url 'transacciones:confirmar' t.id %}"
-                                 class="btn btn-sm btn-outline-success"
+                          {% if estado == 'pendiente' %}
+                            {# Si el medio es Tarjeta de Crédito (TC), ocultamos Confirmar manual y mostramos Link de pago #}
+                            {% if t.medio_pago_id and t.medio_pago_id == 1 %}
+                              <a href="{% url 'transacciones:iniciar_pago_tarjeta' t.id %}"
+                                 class="btn btn-sm btn-primary"
                                  data-bs-toggle="tooltip"
-                                 title="Confirmar transacción">
-                                <i class="bi bi-check2-circle"></i>
+                                 title="Generar y abrir el link de pago (Stripe)">
+                                <i class="bi bi-link-45deg"></i>
                               </a>
+                              {% if request.user|has_permission:'transacciones.cancelar' %}
+                                <a href="{% url 'transacciones:cancelar' t.id %}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   data-bs-toggle="tooltip"
+                                   title="Cancelar transacción">
+                                  <i class="bi bi-x-circle"></i>
+                                </a>
+                              {% endif %}
+                            {% else %}
+                              {# Flujo normal (no TC): Confirmar / Cancelar #}
+                              {% if request.user|has_permission:'transacciones.confirmar' %}
+                                <a href="{% url 'transacciones:confirmar' t.id %}"
+                                   class="btn btn-sm btn-outline-success"
+                                   data-bs-toggle="tooltip"
+                                   title="Confirmar transacción">
+                                  <i class="bi bi-check2-circle"></i>
+                                </a>
+                              {% endif %}
+                              {% if request.user|has_permission:'transacciones.cancelar' %}
+                                <a href="{% url 'transacciones:cancelar' t.id %}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   data-bs-toggle="tooltip"
+                                   title="Cancelar transacción">
+                                  <i class="bi bi-x-circle"></i>
+                                </a>
+                              {% endif %}
                             {% endif %}
-                            {% if request.user|has_permission:'transacciones.cancelar' %}
-                              <a href="{% url 'transacciones:cancelar' t.id %}"
-                                 class="btn btn-sm btn-outline-danger"
-                                 data-bs-toggle="tooltip"
-                                 title="Cancelar transacción">
-                                <i class="bi bi-x-circle"></i>
-                              </a>
-                            {% endif %}
-                          {% elif t.estado == 'pagada' %}
+                          {% elif estado == 'pagada' %}
+                            {# Podrías agregar aquí un botón de ver comprobante, etc. #}
                           {% endif %}
                         </div>
                       </td>
                     </tr>
+                    {% endwith %}
                   {% endfor %}
                 </tbody>
               </table>
@@ -134,8 +172,8 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 });
 </script>
 {% endblock %}

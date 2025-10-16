@@ -9,4 +9,9 @@ urlpatterns = [
     path("<int:pk>/confirmar/", views.confirmar_view, name="confirmar"),
     path("<int:pk>/cancelar/", views.cancelar_view, name="cancelar"),
     path("calcular/", views.calcular_api, name="calcular_api"),
+
+    path("<int:pk>/pago/tarjeta/", views.iniciar_pago_tarjeta, name="iniciar_pago_tarjeta"),
+    path("stripe/webhook/", views.stripe_webhook, name="stripe_webhook"),
+    path("pagos/success/", views.pago_success, name="pago_success"),
+    path("pagos/cancel/", views.pago_cancel, name="pago_cancel"),
 ]
