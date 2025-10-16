@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <!-- Force light theme for this page and hide the app shell so the verify card looks like the login/password-reset pages -->
+  <style>
+    /* Make the overall page light for this view */
+    html[data-coreui-theme="dark"] body { background: #ffffff !important; }
+    /* Hide global app chrome on this page */
+    .sidebar, header.header, footer.footer { display: none !important; }
+    /* Force the verify card to be centered in the viewport */
+    .mfa-verify-wrapper { position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; padding: 1rem; }
+    .mfa-verify-card { max-width:900px; width:100%; border-radius:8px; box-shadow: 0 6px 18px rgba(20,20,20,0.08); }
+    .mfa-verify-card .card-body { padding:2rem; }
+  </style>
+
+  <script>
+    // Ensure the page uses the light theme so text and inputs inherit the light palette
+    try { document.documentElement.setAttribute('data-coreui-theme', 'light'); } catch(e) { /* ignore */ }
+  </script>
+
+  <div class="mfa-verify-wrapper">
+    <div class="card mb-4 mfa-verify-card bg-white text-dark">
+      <div class="card-body">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="display-5">Verificación de código</h1>
+        <p class="text-muted">Se envió un código al método configurado. Ingrese el código para continuar.</p>
+      </div>
+    </div>
+
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" id="verify-form">
+      {% csrf_token %}
+      <input type="hidden" id="mfa-email" value="{{ usuario.email }}" />
+      <div class="mb-3">
+        <label class="form-label visually-hidden" for="code">Código</label>
+        <div class="d-flex justify-content-center" id="otp-boxes" data-length="{{ otp_length|default:6 }}" style="gap:0.6rem;">
+          <!-- digit inputs will be created dynamically by JS -->
+        </div>
+        <input type="hidden" id="code" name="code" />
+      </div>
+
+  <div id="otp-client-error" class="text-danger mb-2" style="display:none;"></div>
+  <div class="d-flex align-items-center" style="gap:12px;">
+        <button class="btn btn-primary btn-lg" type="submit" id="verify-btn">Verificar</button>
+        <a href="#" id="resend-btn" class="btn btn-link" aria-disabled="true">Reenviar código</a>
+        <div class="text-muted ms-2" id="timer" aria-live="polite">{{ ttl_seconds|default:30 }}s</div>
+        <div class="ms-auto">
+          <a href="{% url 'usuarios:login' %}">Volver al inicio de sesión</a>
+        </div>
+      </div>
+
+      <div id="expired-msg" class="alert alert-warning mt-3" style="display:none;">El código ha expirado. Por favor reenvíe el código.</div>
+    </form>
+  </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const serverTtlRaw = '{{ ttl_seconds|default:"" }}';
+  const serverTtl = serverTtlRaw === '' ? null : parseInt(serverTtlRaw, 10);
+  const storageKey = 'mfa_ttl_' + (document.getElementById('mfa-email') ? document.getElementById('mfa-email').value : 'unknown');
+  // prefer server-provided ttl; otherwise try to resume from sessionStorage; if none, treat as expired (do not reset to full TTL)
+  let ttl = (serverTtl !== null) ? serverTtl : (parseInt(sessionStorage.getItem(storageKey) || '0', 10) || null);
+  let remaining = ttl;
+  let interval = null;
+
+  const timerEl = document.getElementById('timer');
+  const expiredEl = document.getElementById('expired-msg');
+  const resendBtn = document.getElementById('resend-btn');
+  const verifyBtn = document.getElementById('verify-btn');
+
+  function formatSeconds(s){ return `${s}s`; }
+
+  function startTimer(seconds){
+    clearInterval(interval);
+    remaining = seconds;
+    expiredEl.style.display = 'none';
+    verifyBtn.disabled = false;
+    // disable resend until timer reaches 0
+    resendBtn.classList.add('disabled');
+    resendBtn.setAttribute('aria-disabled','true');
+    timerEl.textContent = formatSeconds(remaining);
+    // persist remaining seconds so a reload can resume
+    sessionStorage.setItem(storageKey, String(remaining));
+    interval = setInterval(()=>{
+      remaining -= 1;
+      if(remaining <= 0){
+        clearInterval(interval);
+        timerEl.textContent = '0s';
+        expiredEl.style.display = '';
+        verifyBtn.disabled = true;
+        // enable resend
+        resendBtn.classList.remove('disabled');
+        resendBtn.removeAttribute('aria-disabled');
+        // clear stored ttl when expired
+        try{ sessionStorage.removeItem(storageKey); } catch(e){}
+      } else { timerEl.textContent = formatSeconds(remaining); }
+      // persist remaining every tick
+      try{ sessionStorage.setItem(storageKey, String(remaining)); } catch(e){}
+    },1000);
+  }
+
+  async function resend(){
+    resendBtn.disabled = true;
+    try{
+      const resp = await fetch('{% url "mfa:generate_otp" %}',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},
+        body: JSON.stringify({ purpose: 'login', email: document.getElementById('mfa-email').value })
+      });
+      if(!resp.ok) throw new Error('error');
+      const data = await resp.json();
+      const newTtl = data.ttl_seconds || ttl;
+      // clear any previous stored ttl and start fresh
+      try{ sessionStorage.removeItem(storageKey); } catch(e){}
+      startTimer(newTtl);
+    }catch(e){ console.error(e); alert('No se pudo reenviar el código. Intente de nuevo.'); }
+    finally{ resendBtn.disabled = false; }
+  }
+
+  // Prevent clicking resend while disabled
+  resendBtn.addEventListener('click', (ev)=>{
+    if(resendBtn.getAttribute('aria-disabled') === 'true') { ev.preventDefault(); return; }
+    ev.preventDefault();
+    resend();
+  });
+
+  // Initialize UI: if we have a ttl (server or resumed), start timer; otherwise show expired and keep resend enabled state if applicable
+  resendBtn.classList.add('disabled');
+  resendBtn.setAttribute('aria-disabled','true');
+  if (ttl === null) {
+    // no ttl available -> consider expired (do not reset to full default)
+    expiredEl.style.display = '';
+    timerEl.textContent = '0s';
+    verifyBtn.disabled = true;
+    // allow resend in this state
+    resendBtn.classList.remove('disabled');
+    resendBtn.removeAttribute('aria-disabled');
+  } else {
+    startTimer(ttl);
+  }
+})();
+</script>
+
+<script>
+// OTP digit inputs behavior: auto-advance, paste, and assemble into hidden #code
+(function(){
+  // ensure digit inputs exist; if not, create them based on data-length
+  const boxes = document.getElementById('otp-boxes');
+  const desired = parseInt(boxes?.dataset?.length || 6, 10) || 6;
+  if (boxes && boxes.children.length === 0) {
+    for (let i = 0; i < desired; i++) {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.inputMode = 'numeric';
+      inp.pattern = '[0-9]*';
+      inp.maxLength = 1;
+      inp.className = 'form-control form-control-lg text-center otp-digit';
+      inp.setAttribute('aria-label', `Digito ${i+1}`);
+      inp.dataset.index = i;
+      boxes.appendChild(inp);
+    }
+  }
+
+  const digits = Array.from(document.querySelectorAll('.otp-digit'));
+  if(digits.length === 0) return;
+
+  function focusIndex(i){ if(digits[i]) digits[i].focus(); }
+
+  digits.forEach((input, idx) => {
+    input.addEventListener('input', (e)=>{
+      const v = e.target.value.replace(/[^0-9]/g,'');
+      e.target.value = v.slice(-1);
+      if(v.length > 0) focusIndex(idx+1);
+    });
+
+    input.addEventListener('keydown', (e)=>{
+      if(e.key === 'Backspace' && !e.target.value){
+        focusIndex(idx-1);
+      }
+      if(e.key === 'ArrowLeft') { focusIndex(idx-1); }
+      if(e.key === 'ArrowRight') { focusIndex(idx+1); }
+    });
+
+    input.addEventListener('paste', (e)=>{
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text') || '';
+      const nums = paste.replace(/\D/g,'').slice(0,digits.length).split('');
+      for(let i=0;i<nums.length;i++){ if(digits[i]) digits[i].value = nums[i]; }
+      focusIndex(Math.min(nums.length, digits.length-1));
+    });
+  });
+
+  // Assemble into hidden input before submit and validate length
+  const form = document.getElementById('verify-form');
+  const clientErr = document.getElementById('otp-client-error');
+  form.addEventListener('submit', (e)=>{
+    const code = digits.map(d=>d.value || '').join('');
+    document.getElementById('code').value = code;
+    if(code.length < digits.length){
+      e.preventDefault();
+      clientErr.textContent = `Ingrese los ${digits.length} dígitos del código.`;
+      clientErr.style.display = '';
+      digits.find(d=>!d.value)?.focus();
+      return false;
+    }
+    // persist current remaining seconds to avoid reset on server response
+    try{ sessionStorage.setItem(storageKey, String(remaining || 0)); } catch(e){}
+    clientErr.style.display = 'none';
+  });
+
+  // focus first input on load
+  setTimeout(()=>{ focusIndex(0); }, 100);
+})();
+</script>
+
+{% endblock %}
