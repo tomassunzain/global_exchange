@@ -4,9 +4,15 @@ from .models import Transaccion
 from commons.enums import TipoTransaccionEnum
 
 class TransaccionForm(forms.ModelForm):
+    email_mfa = forms.EmailField(
+        label="Email para Código de Verificación",
+        required=False, # Será requerido dinámicamente
+        help_text="Si la operación es una COMPRA (débito), se enviará un código a este email para confirmar."
+    )
+
     class Meta:
         model = Transaccion
-        fields = ["cliente", "tipo", "moneda", "monto_operado", "medio_pago"]
+        fields = ["cliente", "tipo", "moneda", "monto_operado", "medio_pago", "email_mfa"]
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -26,3 +32,14 @@ class TransaccionForm(forms.ModelForm):
                     pass
             elif self.instance.pk:
                 self.fields["medio_pago"].queryset = self.instance.cliente.metodos_pago.all()
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get("tipo")
+        email_mfa = cleaned_data.get("email_mfa")
+
+        # Requerir email_mfa si es una compra (débito)
+        if tipo == TipoTransaccionEnum.COMPRA and not email_mfa:
+            self.add_error('email_mfa', 'Este campo es requerido para transacciones de compra.')
+
+        return cleaned_data

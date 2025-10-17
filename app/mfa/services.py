@@ -46,49 +46,61 @@ def _send_otp_by_email(user, raw_code, purpose, expires_at, destination):
         # Consider raising the exception if email failure should stop the process
         # For now, just logging the error.
 
-def generate_otp(user, purpose, method=None, destination=None, length=6, ttl_seconds=None, context=None, max_attempts=None):
+def generate_otp(user, purpose, method=None, destination=None, length=6, ttl_seconds=None, context=None, max_attempts=None, force_method=None, override_destination=None):
     """
     Genera y persiste un OTP para un usuario.
     Aplica rate limiting para prevenir abuso de reenvíos.
     Envía el código por el método configurado (email o terminal para SMS).
+
+    Nuevos parámetros:
+    - force_method: Si se provee (ej. 'email'), ignora la configuración del usuario y usa este método.
+    - override_destination: Si se provee, usa este destino en lugar del configurado o el email del usuario.
     """
     # --- Rate Limiting para Reenvíos ---
-    resend_limit = getattr(settings, 'MFA_RESEND_LIMIT', 3)
-    block_ttl = getattr(settings, 'MFA_RESEND_BLOCK_TTL', 900)
+    # resend_limit = getattr(settings, 'MFA_RESEND_LIMIT', 3)
+    # block_ttl = getattr(settings, 'MFA_RESEND_BLOCK_TTL', 900)
     
-    # Claves para la caché
-    block_key = f'mfa:block:{user.pk}:{purpose}'
-    count_key = f'mfa:resend_count:{user.pk}:{purpose}'
+    # # Claves para la caché
+    # block_key = f'mfa:block:{user.pk}:{purpose}'
+    # count_key = f'mfa:resend_count:{user.pk}:{purpose}'
 
-    # 1. Comprobar si el usuario está bloqueado
-    if cache.get(block_key):
-        block_ttl_remaining = cache.ttl(block_key)
-        raise ValidationError(f"Has solicitado demasiados códigos. Inténtalo de nuevo en {block_ttl_remaining // 60} minutos y {block_ttl_remaining % 60} segundos.")
+    # # 1. Comprobar si el usuario está bloqueado
+    # if cache.get(block_key):
+    #     block_ttl_remaining = cache.ttl(block_key)
+    #     raise ValidationError(f"Has solicitado demasiados códigos. Inténtalo de nuevo en {block_ttl_remaining // 60} minutos y {block_ttl_remaining % 60} segundos.")
 
-    # 2. Comprobar el contador de reenvíos
-    resend_count = cache.get(count_key, 0)
-    if resend_count >= resend_limit:
-        # Bloquear al usuario y lanzar error
-        cache.set(block_key, True, timeout=block_ttl)
-        cache.delete(count_key) # Limpiar el contador una vez que se bloquea
-        raise ValidationError(f"Has superado el límite de reenvíos. Inténtalo de nuevo en {block_ttl // 60} minutos.")
+    # # 2. Comprobar el contador de reenvíos
+    # resend_count = cache.get(count_key, 0)
+    # if resend_count >= resend_limit:
+    #     # Bloquear al usuario y lanzar error
+    #     cache.set(block_key, True, timeout=block_ttl)
+    #     cache.delete(count_key) # Limpiar el contador una vez que se bloquea
+    #     raise ValidationError(f"Has superado el límite de reenvíos. Inténtalo de nuevo en {block_ttl // 60} minutos.")
 
-    # Incrementar el contador de reenvíos (con un TTL igual al del bloqueo para que expire)
-    cache.set(count_key, resend_count + 1, timeout=block_ttl)
+    # # Incrementar el contador de reenvíos (con un TTL igual al del bloqueo para que expire)
+    # cache.set(count_key, resend_count + 1, timeout=block_ttl)
     
     # --- Fin de Rate Limiting ---
 
-    # Determinar método y destino desde la configuración del usuario si no se especifica
-    if method is None or destination is None:
+    # Determinar método y destino
+    final_method = force_method or method
+    final_destination = override_destination or destination
+
+    # Si el método es forzado, el destino también debe ser el "override" o el del usuario
+    if force_method:
+        final_method = force_method
+        final_destination = override_destination or user.email # Default to user's email if override not provided
+    # Si no se fuerza, usar la lógica existente
+    elif final_method is None or final_destination is None:
         try:
             user_mfa_config = user.mfa_config
-            if method is None:
-                method = user_mfa_config.method
-            if destination is None:
-                destination = user_mfa_config.destination or user.email
+            if final_method is None:
+                final_method = user_mfa_config.method
+            if final_destination is None:
+                final_destination = user_mfa_config.destination or user.email
         except UserMfa.DoesNotExist:
-            method = method or 'sms' # Default a SMS (terminal) si no hay config
-            destination = destination or user.email
+            final_method = final_method or 'sms' # Default a SMS (terminal) si no hay config
+            final_destination = final_destination or user.email
 
     # Aplicar valores por defecto desde settings si no se proveen
     if ttl_seconds is None:
@@ -106,8 +118,8 @@ def generate_otp(user, purpose, method=None, destination=None, length=6, ttl_sec
             expires_at=expires_at,
             attempts=0,
             max_attempts=max_attempts,
-            method=method,
-            destination=destination,
+            method=final_method,
+            destination=final_destination,
             context=context or {},
             code_hash=''
         )
@@ -115,19 +127,19 @@ def generate_otp(user, purpose, method=None, destination=None, length=6, ttl_sec
         otp.save(update_fields=['code_hash'])
 
     # --- Punto de Decisión: Enviar por email o mostrar en terminal ---
-    if method == 'email':
-        _send_otp_by_email(user, raw_code, purpose, expires_at, destination)
+    if final_method == 'email':
+        _send_otp_by_email(user, raw_code, purpose, expires_at, final_destination)
     else: # Para 'sms' o cualquier otro método, usar la simulación por terminal
         logger.info('=' * 60)
-        logger.info(f'OTP (simulación para método "{method}") generado para user={user.email} purpose={purpose}')
+        logger.info(f'OTP (simulación para método "{final_method}") generado para user={user.email} purpose={purpose}')
         logger.warning(f'Código: {raw_code}')
         logger.info('=' * 60)
         # Imprimir en terminal para visibilidad en desarrollo
         print('=' * 60, file=sys.stderr)
-        print(f'----- SIMULACIÓN DE ENVÍO MFA ({method.upper()}) -----', file=sys.stderr)
+        print(f'----- SIMULACIÓN DE ENVÍO MFA ({final_method.upper()}) -----', file=sys.stderr)
         print(f"Usuario: {user.email}", file=sys.stderr)
         print(f"Código: {raw_code}", file=sys.stderr)
-        print(f"Destino: {destination}", file=sys.stderr)
+        print(f"Destino: {final_destination}", file=sys.stderr)
         print('=' * 60, file=sys.stderr)
         sys.stderr.flush()
 
@@ -165,8 +177,8 @@ def verify_otp(user, purpose, raw_code, context_match=None):
         otp.used = True
         otp.save(update_fields=['used'])
         # Limpiar el contador de reenvíos si la verificación es exitosa
-        count_key = f'mfa:resend_count:{user.pk}:{purpose}'
-        cache.delete(count_key)
+        # count_key = f'mfa:resend_count:{user.pk}:{purpose}'
+        # cache.delete(count_key)
         return True, otp
 
     raise ValidationError('Código OTP inválido.')
