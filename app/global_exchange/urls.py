@@ -60,4 +60,7 @@ urlpatterns = [
     path('payments/', include('payments.urls', namespace='payments')),
     path('medios_acreditacion/', include('medios_acreditacion.urls', namespace='medios_acreditacion')),
     path('transacciones/', include('transaccion.urls')),
+
+    # --- Tauser ---
+    path('tauser/', include(('tauser.urls', 'tauser'), namespace='tauser')),
 ]
