@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 
 from payments.models import PaymentMethod
@@ -8,6 +9,7 @@ from monedas.models import Moneda
 
 
 class Transaccion(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True)
     cliente = models.ForeignKey(
         Cliente, on_delete=models.CASCADE,
         related_name="transacciones", verbose_name="Cliente"
@@ -42,7 +44,7 @@ class Transaccion(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.get_tipo_display()} {self.moneda} - {self.cliente}"
+        return f"#{self.id} | {self.uuid} | {self.get_tipo_display()} {self.moneda} - {self.cliente}"
 
 
 class Movimiento(models.Model):
