@@ -135,8 +135,8 @@ def generate_otp(user, purpose, method=None, destination=None, length=6, ttl_sec
 
 
 def verify_otp(user, purpose, raw_code, context_match=None):
-    """Verifica el código OTP más reciente para un usuario y propósito.
-
+    """
+    Verifica el código OTP más reciente para un usuario y propósito.
     Retorna (True, otp) si es válido; en caso contrario lanza ValidationError con detalle.
     """
     otps = MfaOtp.objects.filter(user=user, purpose=purpose, used=False).order_by('-created_at')

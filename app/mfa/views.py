@@ -17,8 +17,8 @@ User = get_user_model()
 
 @require_POST
 def generate_otp_view(request):
-    """POST: {"email": "user@example.com", "purpose": "transaction_debit"}
-
+    """
+    POST: {"email": "user@example.com", "purpose": "transaction_debit"}
     Genera un OTP para el usuario y lo imprime en terminal.
     """
     try:
@@ -55,8 +55,8 @@ def generate_otp_view(request):
 @csrf_exempt
 @require_POST
 def verify_otp_view(request):
-    """POST: {"email": "user@example.com", "purpose": "transaction_debit", "code": "123456"}
-
+    """
+    POST: {"email": "user@example.com", "purpose": "transaction_debit", "code": "123456"}
     Verifica el OTP y devuelve estado.
     """
     try:

@@ -5,6 +5,10 @@ from .utils import obtener_datos_transaccion
 from transaccion.models import Transaccion
 
 def tramitar_transacciones(request):
+    """
+    Vista para tramitar transacciones de un cliente activo.
+    Permite consultar datos de una transacción por ID y muestra mensajes de error si corresponde.
+    """
     datos_transaccion = None
     error = None
     transaccion_id = ''
@@ -36,8 +40,14 @@ def tramitar_transacciones(request):
 
 
 def nuevo_tauser(request):
+    """
+    Renderiza la página para crear un nuevo TAUser.
+    """
     return render(request, 'tauser/nuevo_tauser.html')
 
 
 def lista_tausers(request):
+    """
+    Renderiza la página con el listado de TAUsers.
+    """
     return render(request, 'tauser/lista_tausers.html')
