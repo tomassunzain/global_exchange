@@ -39,22 +39,65 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def transacciones_list(request):
     order = request.GET.get("order")
-    dir = request.GET.get("dir")
+    dir_ = request.GET.get("dir")
     cliente_id = request.GET.get("cliente")
 
-    transacciones = Transaccion.objects.all().select_related("cliente", "moneda")
+    # ----- Estado: por defecto 'pendiente' -----
+    estado_qs = request.GET.get("estado", "").lower().strip()
+    estados_validos = {
+        "pendiente": EstadoTransaccionEnum.PENDIENTE,
+        "pagada": EstadoTransaccionEnum.PAGADA,
+        "cancelada": EstadoTransaccionEnum.CANCELADA,
+        "anulada": EstadoTransaccionEnum.ANULADA,
+        "todas": None,
+    }
+    # default si no viene o no es válido
+    if estado_qs not in estados_validos:
+        estado_qs = "pendiente"
+
+    transacciones = (
+        Transaccion.objects
+        .all()
+        .select_related("cliente", "moneda")
+    )
+
+    # filtro por cliente (si aplica)
     if cliente_id:
         transacciones = transacciones.filter(cliente_id=cliente_id)
 
+    # filtro por estado (si NO es 'todas')
+    estado_enum = estados_validos[estado_qs]
+    if estado_enum is not None:
+        transacciones = transacciones.filter(estado=estado_enum)
+
+    # orden por fecha (default desc)
     if order == "fecha":
-        transacciones = transacciones.order_by("fecha" if dir == "asc" else "-fecha")
+        transacciones = transacciones.order_by("fecha" if dir_ == "asc" else "-fecha")
+    else:
+        transacciones = transacciones.order_by("-fecha")
+
+    # ---- Contadores por estado (respetando cliente si está filtrado) ----
+    base = Transaccion.objects.all()
+    if cliente_id:
+        base = base.filter(cliente_id=cliente_id)
+
+    counts = {
+        "pendiente": base.filter(estado=EstadoTransaccionEnum.PENDIENTE).count(),
+        "pagada": base.filter(estado=EstadoTransaccionEnum.PAGADA).count(),
+        "cancelada": base.filter(estado=EstadoTransaccionEnum.CANCELADA).count(),
+        "anulada": base.filter(estado=EstadoTransaccionEnum.ANULADA).count(),
+        "todas": base.count(),
+    }
 
     clientes = Cliente.objects.all()
-    return render(
-        request,
-        "transacciones/transacciones_list.html",
-        {"transacciones": transacciones, "clientes": clientes, "cliente_id": cliente_id},
-    )
+    ctx = {
+        "transacciones": transacciones,
+        "clientes": clientes,
+        "cliente_id": cliente_id,
+        "estado_qs": estado_qs,
+        "counts": counts,
+    }
+    return render(request, "transacciones/transacciones_list.html", ctx)
 
 
 def confirmar_view(request, pk):
