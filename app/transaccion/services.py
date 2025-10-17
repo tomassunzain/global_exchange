@@ -87,6 +87,31 @@ def calcular_transaccion(cliente, tipo, moneda, monto_operado):
     }
 
 
+def obtener_datos_transaccion(transaccion_id):
+    try:
+        tx = Transaccion.objects.select_related('cliente', 'moneda').get(pk=transaccion_id)
+    except Transaccion.DoesNotExist:
+        return None
+
+    # Tasa actual
+    tasa_actual = (
+        TasaCambio.objects.filter(moneda=tx.moneda, activa=True)
+        .latest("fecha_creacion")
+        .compra  # o venta, según el tipo
+    )
+
+    return {
+        "id": tx.id,
+        "tipo": tx.get_tipo_display(),
+        "moneda": tx.moneda,
+        "tasa": tx.tasa_aplicada,
+        "tasa_recalculada": tasa_actual,
+        "monto_operado": tx.monto_operado,
+        "monto_pyg": tx.monto_pyg,
+        "estado": tx.estado,
+    }
+
+
 
 def confirmar_transaccion_con_otp(transaccion, user, raw_code, context_match=None):
     """

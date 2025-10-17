@@ -29,13 +29,84 @@ from .services import (
     requiere_pago_tarjeta,
     verificar_pago_stripe,
 )
-
+from monedas.models import TasaCambio
 from django.contrib import messages
 from commons.enums import EstadoTransaccionEnum, TipoTransaccionEnum, TipoMovimientoEnum
+from django.views.decorators.http import require_http_methods
 
 logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+
+
+@require_http_methods(["GET", "POST"])
+def tramitar_transaccion_terminal(request):
+    """
+    Simula la terminal física (tauser) para pagos en efectivo.
+    Permite buscar por ID y confirmar o cancelar la transacción.
+    """
+    datos_transaccion = None
+    error = None
+    mensaje = None
+    transaccion_id = ""
+
+    if request.method == "POST":
+        transaccion_id = request.POST.get("transaccion_id", "").strip()
+        accion = request.POST.get("accion", "buscar")
+
+        if not transaccion_id:
+            error = "Debe ingresar el ID de la transacción."
+        else:
+            try:
+                tx = Transaccion.objects.select_related("cliente", "moneda").get(pk=transaccion_id)
+            except Transaccion.DoesNotExist:
+                tx = None
+                error = f"No se encontró la transacción #{transaccion_id}."
+
+            if tx:
+                if accion == "buscar":
+                    # Solo mostrar si está pendiente
+                    if tx.estado != EstadoTransaccionEnum.PENDIENTE:
+                        error = f"La transacción #{tx.id} no está pendiente (estado actual: {tx.estado})."
+                    else:
+                        tasa_actual = (
+                            TasaCambio.objects.filter(moneda=tx.moneda, activa=True)
+                            .latest("fecha_creacion")
+                            .compra
+                        )
+                        datos_transaccion = {
+                            "id": tx.id,
+                            "tipo": tx.get_tipo_display(),
+                            "moneda": tx.moneda,
+                            "tasa": tx.tasa_aplicada,
+                            "tasa_recalculada": tasa_actual,
+                            "monto_operado": tx.monto_operado,
+                            "monto_pyg": tx.monto_pyg,
+                            "cliente": tx.cliente,
+                            "estado": tx.estado,
+                        }
+
+                elif accion == "confirmar":
+                    try:
+                        confirmar_transaccion(tx)
+                        mensaje = f"Transacción #{tx.id} confirmada correctamente."
+                    except Exception as e:
+                        error = str(e)
+
+                elif accion == "cancelar":
+                    try:
+                        cancelar_transaccion(tx)
+                        mensaje = f"Transacción #{tx.id} cancelada correctamente."
+                    except Exception as e:
+                        error = str(e)
+
+    context = {
+        "datos_transaccion": datos_transaccion,
+        "error": error,
+        "mensaje": mensaje,
+        "transaccion_id": transaccion_id,
+    }
+    return render(request, "transacciones/terminal.html", context)
 
 def transacciones_list(request):
     order = request.GET.get("order")
@@ -142,7 +213,10 @@ def transaccion_create(request):
                     calculo["monto_pyg"],
                     medio_pago,
                 )
-                messages.success(request, f"Transacción {transaccion.id} creada correctamente.")
+                messages.success(request, 
+                    f"Transacción {transaccion.id} creada correctamente. "
+                    f"Código para pago en terminal: {transaccion.uuid}"
+                )
                 return redirect("transacciones:transacciones_list")
             except ValidationError as e:
                 messages.error(request, str(e))
