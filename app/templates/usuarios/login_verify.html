@@ -32,6 +32,12 @@
       <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
 
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
     <form method="post" id="verify-form">
       {% csrf_token %}
       <input type="hidden" id="mfa-email" value="{{ usuario.email }}" />
@@ -45,9 +51,9 @@
 
   <div id="otp-client-error" class="text-danger mb-2" style="display:none;"></div>
   <div class="d-flex align-items-center" style="gap:12px;">
-        <button class="btn btn-primary btn-lg" type="submit" id="verify-btn">Verificar</button>
-        <a href="#" id="resend-btn" class="btn btn-link" aria-disabled="true">Reenviar código</a>
-        <div class="text-muted ms-2" id="timer" aria-live="polite">{{ ttl_seconds|default:30 }}s</div>
+        <button class="btn btn-primary btn-lg" type="submit" id="verify-btn" name="verify_code">Verificar</button>
+        <button class="btn btn-link" id="resend-btn" name="resend_code" type="submit" aria-disabled="true">Reenviar código</button>
+        <div class="text-muted ms-2" id="timer" aria-live="polite"></div>
         <div class="ms-auto">
           <a href="{% url 'usuarios:login' %}">Volver al inicio de sesión</a>
         </div>
@@ -62,9 +68,11 @@
 <script>
 (() => {
   const serverTtlRaw = '{{ ttl_seconds|default:"" }}';
+  const serverBlockTtlRaw = '{{ block_ttl_remaining|default:"" }}';
   const serverTtl = serverTtlRaw === '' ? null : parseInt(serverTtlRaw, 10);
+  const serverBlockTtl = serverBlockTtlRaw === '' ? null : parseInt(serverBlockTtlRaw, 10);
+
   const storageKey = 'mfa_ttl_' + (document.getElementById('mfa-email') ? document.getElementById('mfa-email').value : 'unknown');
-  // prefer server-provided ttl; otherwise try to resume from sessionStorage; if none, treat as expired (do not reset to full TTL)
   let ttl = (serverTtl !== null) ? serverTtl : (parseInt(sessionStorage.getItem(storageKey) || '0', 10) || null);
   let remaining = ttl;
   let interval = null;
@@ -73,76 +81,92 @@
   const expiredEl = document.getElementById('expired-msg');
   const resendBtn = document.getElementById('resend-btn');
   const verifyBtn = document.getElementById('verify-btn');
+  const otpBoxes = document.getElementById('otp-boxes');
 
-  function formatSeconds(s){ return `${s}s`; }
+  function formatSeconds(s){ 
+      if (s > 60) {
+          const minutes = Math.floor(s / 60);
+          const seconds = s % 60;
+          return `${minutes}m ${seconds}s`;
+      }
+      return `${s}s`; 
+  }
 
-  function startTimer(seconds){
+  function startTimer(seconds, isBlockTimer = false){
     clearInterval(interval);
     remaining = seconds;
-    expiredEl.style.display = 'none';
-    verifyBtn.disabled = false;
-    // disable resend until timer reaches 0
-    resendBtn.classList.add('disabled');
-    resendBtn.setAttribute('aria-disabled','true');
-    timerEl.textContent = formatSeconds(remaining);
-    // persist remaining seconds so a reload can resume
+    
+    if (isBlockTimer) {
+        timerEl.textContent = `Bloqueado: ${formatSeconds(remaining)}`;
+        expiredEl.style.display = 'none';
+        verifyBtn.disabled = true;
+        resendBtn.classList.add('disabled');
+        resendBtn.setAttribute('aria-disabled','true');
+        otpBoxes.style.display = 'none'; // Ocultar cajas de OTP
+    } else {
+        timerEl.textContent = formatSeconds(remaining);
+        expiredEl.style.display = 'none';
+        verifyBtn.disabled = false;
+        resendBtn.classList.add('disabled');
+        resendBtn.setAttribute('aria-disabled','true');
+        otpBoxes.style.display = 'flex';
+    }
+
     sessionStorage.setItem(storageKey, String(remaining));
     interval = setInterval(()=>{
       remaining -= 1;
       if(remaining <= 0){
         clearInterval(interval);
-        timerEl.textContent = '0s';
-        expiredEl.style.display = '';
-        verifyBtn.disabled = true;
-        // enable resend
-        resendBtn.classList.remove('disabled');
-        resendBtn.removeAttribute('aria-disabled');
-        // clear stored ttl when expired
+        if (isBlockTimer) {
+            // Cuando el bloqueo termina, volvemos al estado normal (probablemente expirado)
+            timerEl.textContent = '0s';
+            expiredEl.style.display = '';
+            verifyBtn.disabled = true;
+            resendBtn.classList.remove('disabled');
+            resendBtn.removeAttribute('aria-disabled');
+            otpBoxes.style.display = 'flex';
+        } else {
+            timerEl.textContent = '0s';
+            expiredEl.style.display = '';
+            verifyBtn.disabled = true;
+            resendBtn.classList.remove('disabled');
+            resendBtn.removeAttribute('aria-disabled');
+        }
         try{ sessionStorage.removeItem(storageKey); } catch(e){}
-      } else { timerEl.textContent = formatSeconds(remaining); }
-      // persist remaining every tick
+      } else { 
+          if (isBlockTimer) {
+              timerEl.textContent = `Bloqueado: ${formatSeconds(remaining)}`;
+          } else {
+              timerEl.textContent = formatSeconds(remaining);
+          }
+      }
       try{ sessionStorage.setItem(storageKey, String(remaining)); } catch(e){}
     },1000);
   }
 
-  async function resend(){
-    resendBtn.disabled = true;
-    try{
-      const resp = await fetch('{% url "mfa:generate_otp" %}',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},
-        body: JSON.stringify({ purpose: 'login', email: document.getElementById('mfa-email').value })
-      });
-      if(!resp.ok) throw new Error('error');
-      const data = await resp.json();
-      const newTtl = data.ttl_seconds || ttl;
-      // clear any previous stored ttl and start fresh
-      try{ sessionStorage.removeItem(storageKey); } catch(e){}
-      startTimer(newTtl);
-    }catch(e){ console.error(e); alert('No se pudo reenviar el código. Intente de nuevo.'); }
-    finally{ resendBtn.disabled = false; }
-  }
-
-  // Prevent clicking resend while disabled
+  // No más reenvío por fetch, ahora es un submit de formulario
   resendBtn.addEventListener('click', (ev)=>{
-    if(resendBtn.getAttribute('aria-disabled') === 'true') { ev.preventDefault(); return; }
-    ev.preventDefault();
-    resend();
+    if(resendBtn.getAttribute('aria-disabled') === 'true') { 
+        ev.preventDefault(); 
+        return; 
+    }
+    // El botón ahora es de tipo submit, el formulario se encargará.
   });
 
-  // Initialize UI: if we have a ttl (server or resumed), start timer; otherwise show expired and keep resend enabled state if applicable
-  resendBtn.classList.add('disabled');
-  resendBtn.setAttribute('aria-disabled','true');
-  if (ttl === null) {
-    // no ttl available -> consider expired (do not reset to full default)
-    expiredEl.style.display = '';
-    timerEl.textContent = '0s';
-    verifyBtn.disabled = true;
-    // allow resend in this state
-    resendBtn.classList.remove('disabled');
-    resendBtn.removeAttribute('aria-disabled');
+  // --- Lógica de inicialización ---
+  if (serverBlockTtl !== null && serverBlockTtl > 0) {
+      // Si el servidor dice que estamos bloqueados, iniciamos el contador de bloqueo.
+      startTimer(serverBlockTtl, true);
+  } else if (ttl !== null && ttl > 0) {
+      // Si no estamos bloqueados y hay TTL para el código, iniciamos el contador normal.
+      startTimer(ttl, false);
   } else {
-    startTimer(ttl);
+      // Si no hay bloqueo y no hay TTL, el código está expirado.
+      expiredEl.style.display = '';
+      timerEl.textContent = '0s';
+      verifyBtn.disabled = true;
+      resendBtn.classList.remove('disabled');
+      resendBtn.removeAttribute('aria-disabled');
   }
 })();
 </script>
@@ -200,6 +224,12 @@
   const form = document.getElementById('verify-form');
   const clientErr = document.getElementById('otp-client-error');
   form.addEventListener('submit', (e)=>{
+    // ONLY validate digits if the user is trying to verify, not resend.
+    if (document.activeElement && document.activeElement.name === 'resend_code') {
+      // Allow form submission for resend without validation.
+      return;
+    }
+
     const code = digits.map(d=>d.value || '').join('');
     document.getElementById('code').value = code;
     if(code.length < digits.length){

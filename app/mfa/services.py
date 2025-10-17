@@ -2,6 +2,7 @@
 from datetime import timedelta
 from django.utils import timezone
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -48,8 +49,35 @@ def _send_otp_by_email(user, raw_code, purpose, expires_at, destination):
 def generate_otp(user, purpose, method=None, destination=None, length=6, ttl_seconds=None, context=None, max_attempts=None):
     """
     Genera y persiste un OTP para un usuario.
+    Aplica rate limiting para prevenir abuso de reenvíos.
     Envía el código por el método configurado (email o terminal para SMS).
     """
+    # --- Rate Limiting para Reenvíos ---
+    resend_limit = getattr(settings, 'MFA_RESEND_LIMIT', 3)
+    block_ttl = getattr(settings, 'MFA_RESEND_BLOCK_TTL', 900)
+    
+    # Claves para la caché
+    block_key = f'mfa:block:{user.pk}:{purpose}'
+    count_key = f'mfa:resend_count:{user.pk}:{purpose}'
+
+    # 1. Comprobar si el usuario está bloqueado
+    if cache.get(block_key):
+        block_ttl_remaining = cache.ttl(block_key)
+        raise ValidationError(f"Has solicitado demasiados códigos. Inténtalo de nuevo en {block_ttl_remaining // 60} minutos y {block_ttl_remaining % 60} segundos.")
+
+    # 2. Comprobar el contador de reenvíos
+    resend_count = cache.get(count_key, 0)
+    if resend_count >= resend_limit:
+        # Bloquear al usuario y lanzar error
+        cache.set(block_key, True, timeout=block_ttl)
+        cache.delete(count_key) # Limpiar el contador una vez que se bloquea
+        raise ValidationError(f"Has superado el límite de reenvíos. Inténtalo de nuevo en {block_ttl // 60} minutos.")
+
+    # Incrementar el contador de reenvíos (con un TTL igual al del bloqueo para que expire)
+    cache.set(count_key, resend_count + 1, timeout=block_ttl)
+    
+    # --- Fin de Rate Limiting ---
+
     # Determinar método y destino desde la configuración del usuario si no se especifica
     if method is None or destination is None:
         try:
@@ -136,6 +164,9 @@ def verify_otp(user, purpose, raw_code, context_match=None):
     if otp.verify_code(raw_code):
         otp.used = True
         otp.save(update_fields=['used'])
+        # Limpiar el contador de reenvíos si la verificación es exitosa
+        count_key = f'mfa:resend_count:{user.pk}:{purpose}'
+        cache.delete(count_key)
         return True, otp
 
     raise ValidationError('Código OTP inválido.')

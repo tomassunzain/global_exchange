@@ -163,7 +163,6 @@ def usuarios_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # ...existing code...
     # Obtener todos los roles para el filtro
     roles = Role.objects.all()
 
@@ -336,6 +335,11 @@ def login_view(request):
                 pass
 
             login(request, user)
+            # Si el usuario no tiene MFA, se considera verificado.
+            # Si tiene MFA, el flag se pondrá en la vista de verificación.
+            if not (hasattr(user, 'user_mfa_profile') and user.user_mfa_profile.is_enabled):
+                request.session['mfa_verified'] = True
+
             return redirect('usuarios:dashboard')
     else:
         form = LoginForm()
@@ -360,17 +364,62 @@ def login_verify(request):
 
     error = None
     ttl_seconds = None
-    # compute remaining TTL early so we can reuse it if verification fails
+    block_ttl_remaining = None # Nuevo: para el contador de bloqueo
+
+    # --- Manejo de reenvío de código ---
+    if request.method == 'POST' and 'resend_code' in request.POST:
+        from mfa.services import generate_otp
+        try:
+            # Antes de intentar generar, comprobamos si ya está bloqueado
+            from django.core.cache import cache
+            block_key = f'mfa:block:{user.pk}:login'
+            if cache.get(block_key):
+                 block_ttl_remaining = cache.ttl(block_key)
+                 error = f"Has solicitado demasiados códigos. Inténtalo de nuevo en {block_ttl_remaining // 60} minutos y {block_ttl_remaining % 60} segundos."
+            else:
+                generate_otp(user, purpose='login')
+                messages.info(request, "Se ha enviado un nuevo código a tu correo.")
+        except Exception as e:
+            try:
+                from django.core.exceptions import ValidationError
+                if isinstance(e, ValidationError):
+                    error = e.message # Usar el mensaje de la excepción
+                    # Si el error es por bloqueo, extraemos el tiempo restante
+                    block_key = f'mfa:block:{user.pk}:login'
+                    from django.core.cache import cache
+                    if cache.get(block_key):
+                        block_ttl_remaining = cache.ttl(block_key)
+                else:
+                    error = str(e)
+            except Exception:
+                error = str(e)
+    
+    # --- Fin de manejo de reenvío ---
+
+    # Obtener el OTP más reciente para calcular el TTL del código
     try:
         otp_id = pending.get('otp_id')
         from mfa.models import MfaOtp
-        _otp = MfaOtp.objects.filter(id=otp_id).first()
+        _otp = MfaOtp.objects.filter(user=user, purpose='login', used=False).order_by('-created_at').first()
         if _otp and getattr(_otp, 'expires_at', None):
             from django.utils import timezone
             ttl_seconds = max(int((_otp.expires_at - timezone.now()).total_seconds()), 0)
+            # Actualizar el otp_id en sesión por si se reenvió
+            pending['otp_id'] = str(_otp.id)
+            request.session['mfa_login_pending'] = pending
+
     except Exception:
         ttl_seconds = None
-    if request.method == 'POST':
+
+    # --- Comprobar si el usuario está bloqueado (también para GET requests) ---
+    if not block_ttl_remaining:
+        from django.core.cache import cache
+        block_key = f'mfa:block:{user.pk}:login'
+        if cache.get(block_key):
+            block_ttl_remaining = cache.ttl(block_key)
+    # --- Fin de comprobación de bloqueo ---
+
+    if request.method == 'POST' and 'verify_code' in request.POST:
         code = request.POST.get('code', '').strip()
         if not code:
             error = 'Ingrese el código.'
@@ -386,8 +435,9 @@ def login_verify(request):
                     if ok:
                         # OTP valid: complete login
                         login(request, user)
-                        # clear pending
+                        # clear pending and set mfa_verified flag
                         request.session.pop('mfa_login_pending', None)
+                        request.session['mfa_verified'] = True
                         return redirect('usuarios:dashboard')
                     else:
                         error = 'Código inválido.'
@@ -410,9 +460,12 @@ def login_verify(request):
                     except Exception:
                         error = str(e)
 
-    # TTL was computed earlier (before POST) to avoid resetting it after failed verification
-
-    return render(request, 'usuarios/login_verify.html', {'usuario': user, 'error': error, 'ttl_seconds': ttl_seconds})
+    return render(request, 'usuarios/login_verify.html', {
+        'usuario': user, 
+        'error': error, 
+        'ttl_seconds': ttl_seconds,
+        'block_ttl_remaining': block_ttl_remaining # Pasar el tiempo de bloqueo al template
+    })
 
 
 

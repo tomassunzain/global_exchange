@@ -36,6 +36,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    'usuarios.middleware.MfaRequiredMiddleware',
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -91,9 +92,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # MFA defaults
-MFA_DEFAULT_TTL_SECONDS = int(os.getenv('MFA_DEFAULT_TTL_SECONDS', '30'))
+MFA_DEFAULT_TTL_SECONDS = int(os.getenv('MFA_DEFAULT_TTL_SECONDS', '300'))
 MFA_CODE_LENGTH = int(os.getenv('MFA_CODE_LENGTH', '6'))
 MFA_MAX_ATTEMPTS = int(os.getenv('MFA_MAX_ATTEMPTS', '5'))
+MFA_RESEND_LIMIT = int(os.getenv('MFA_RESEND_LIMIT', '3'))
+MFA_RESEND_BLOCK_TTL = int(os.getenv('MFA_RESEND_BLOCK_TTL', '900'))
+
 
 _csrf = os.getenv("CSRF_TRUSTED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = _csrf.split(",") if _csrf else []
