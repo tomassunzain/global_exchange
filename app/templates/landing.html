@@ -43,7 +43,6 @@
                     <th>VARIACIÓN</th>
                     <th>FUENTE</th>
                     <th>ACTUALIZADO</th>
-                    <th>ESTADO</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -60,13 +59,6 @@
                     </td>
                     <td>{{ tasa.fuente|default:"-" }}</td>
                     <td>{{ tasa.fecha_creacion|date:'d/m H:i' }}</td>
-                    <td>
-                      {% if tasa.estado == 'Activa' %}
-                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> Activa</span>
-                      {% else %}
-                        <span class="badge bg-secondary">Inactiva</span>
-                      {% endif %}
-                    </td>
                   </tr>
                   {% empty %}
                   <tr>

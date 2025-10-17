@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Tramitar Transacciones</h1>
+
+<form method="post" class="mb-4">
+	{% csrf_token %}
+	<div class="mb-3">
+		<label for="transaccion_id" class="form-label">Seleccione una transacción del cliente</label>
+		<select class="form-select" id="transaccion_id" name="transaccion_id" required>
+			<option value="">-- Seleccione --</option>
+			{% for t in transacciones_cliente %}
+				<option value="{{ t.id }}" {% if t.id|stringformat:'s' == transaccion_id|stringformat:'s' %}selected{% endif %}>
+					#{{ t.id }} | {{ t.get_tipo_display }} | {{ t.moneda.codigo }} | {{ t.monto_operado }} | {{ t.fecha|date:'d/m/Y H:i' }}
+				</option>
+			{% empty %}
+				<option disabled>No hay transacciones para este cliente.</option>
+			{% endfor %}
+		</select>
+	</div>
+	<button type="submit" class="btn btn-primary">Buscar</button>
+</form>
+
+{% if error %}
+	<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+{% if datos_transaccion %}
+	<div class="card mt-4">
+		<div class="card-header">Datos de la Transacción</div>
+		<div class="card-body">
+			<ul class="list-group list-group-flush">
+				<li class="list-group-item"><strong>Tipo:</strong> {{ datos_transaccion.tipo }}</li>
+				<li class="list-group-item"><strong>Moneda:</strong> {{ datos_transaccion.moneda.codigo }}</li>
+				<li class="list-group-item"><strong>Tasa aplicada:</strong> {{ datos_transaccion.tasa }}</li>
+				<li class="list-group-item"><strong>Tasa recalculada:</strong> {{ datos_transaccion.tasa_recalculada }}</li>
+			</ul>
+			{% if datos_transaccion.tasa != datos_transaccion.tasa_recalculada %}
+				<div class="alert alert-warning mt-3">
+					¡Atención! La tasa de cambio ha cambiado para la moneda {{ datos_transaccion.moneda.codigo }}.<br>
+					Tasa aplicada en la transacción: <strong>{{ datos_transaccion.tasa }}</strong><br>
+					Tasa recalculada actual: <strong>{{ datos_transaccion.tasa_recalculada }}</strong><br>
+					¿Desea continuar con la transacción o cancelar?
+				</div>
+			{% endif %}
+		</div>
+	</div>
+{% endif %}
+{% endblock %}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load usuarios_extras %}
 
 {% block title %}
   Editar Rol - {{ role.name }}
@@ -87,7 +88,10 @@
                 </style>
                 <ul class="permisos-grid">
                   {% for checkbox in form.permissions %}
-                    <li>{{ checkbox.tag }} {{ checkbox.choice_label }}</li>
+                    <li>
+                      {{ checkbox.tag }} 
+                      {{ checkbox.choice_label|replace:"comisiones,descuentos"|replace:"comisión,descuento" }}
+                    </li>
                   {% endfor %}
                 </ul>
               </div>

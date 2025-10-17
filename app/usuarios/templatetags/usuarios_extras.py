@@ -2,6 +2,18 @@ from django import template
 
 register = template.Library()
 
+@register.filter(name='replace')
+def replace(value, arg):
+    """
+    Reemplaza la primera coma por el separador y luego el texto a buscar y el texto de reemplazo.
+    Uso: {{ value|replace:"buscar,reemplazo" }}
+    """
+    try:
+        buscar, reemplazo = arg.split(',')
+        return value.replace(buscar, reemplazo)
+    except Exception:
+        return value
+
 @register.filter
 def has_permission(user, perm_code):
     """

@@ -62,4 +62,7 @@ urlpatterns = [
     path('transacciones/', include('transaccion.urls')),
     # MFA endpoints (generate/verify) - used for testing OTP by terminal
     path('mfa/', include(('mfa.urls', 'mfa'), namespace='mfa')),
+
+    # --- Tauser ---
+    path('tauser/', include(('tauser.urls', 'tauser'), namespace='tauser')),
 ]
