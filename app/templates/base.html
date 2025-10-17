@@ -297,7 +297,7 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">
+            <a class="nav-link" href="{% url 'usuarios:security_settings' %}">
               <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
               Seguridad
             </a>
@@ -453,11 +453,11 @@
                 <div class="dropdown-header bg-body-tertiary text-body-secondary fw-semibold rounded-top mb-2">
                   Hola, {{ request.user.email|truncatechars:20 }}
                 </div>
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="{% url 'usuarios:perfil' %}">
                   <i class="bi bi-person me-2"></i>
                   Mi Perfil
                 </a>
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="{% url 'usuarios:security_settings' %}">
                   <i class="bi bi-gear me-2"></i>
                   Configuración
                 </a>
