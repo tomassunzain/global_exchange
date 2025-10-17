@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load widget_tweaks %}
 
 {% block title %}
   {% if transaccion %}Editar Transacción #{{ transaccion.id }}{% else %}Nueva Transacción{% endif %}
@@ -16,16 +17,25 @@
 {% block content %}
 <div class="container-fluid">
   <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card">
+    <div class="col-12 col-lg-10 col-xl-8">
+      <div class="card shadow-sm">
+
         <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>
+          <div class="d-flex align-items-center gap-2">
             {% if transaccion %}
-              <i class="bi bi-pencil"></i> Editar Transacción #{{ transaccion.id }}
+              <i class="bi bi-pencil fs-5"></i>
+              <strong>Editar Transacción #{{ transaccion.id }}</strong>
+              {% if transaccion.estado %}
+                <span class="badge bg-{% if transaccion.estado == 'PENDIENTE' %}warning{% elif transaccion.estado == 'APROBADA' %}success{% else %}secondary{% endif %} ms-2">
+                  {{ transaccion.estado|title }}
+                </span>
+              {% endif %}
             {% else %}
-              <i class="bi bi-cash-coin"></i> Crear Nueva Transacción
+              <i class="bi bi-cash-coin fs-5"></i>
+              <strong>Crear Nueva Transacción</strong>
             {% endif %}
-          </strong>
+          </div>
+
           <div class="d-flex align-items-center gap-3">
             <span id="timeout-timer" class="text-muted small">
               <i class="bi bi-clock"></i> Sesión caduca en <span id="timeout-seconds">120</span>s
@@ -35,119 +45,113 @@
             </a>
           </div>
         </div>
+
         <div class="card-body">
-          <form method="post">
+
+          {# --- Stripe (solo cuando aplica) --- #}
+          {% if transaccion and transaccion.estado == "PENDIENTE" and transaccion.medio_pago and transaccion.medio_pago.tipo == "TC" %}
+            <div class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
+              <div class="me-3">
+                <i class="bi bi-credit-card"></i>
+                Esta transacción usará <strong>Tarjeta de Crédito (Stripe)</strong>.
+                Generá el link de pago y aguardá la confirmación por <em>webhook</em>.
+                {% if transaccion.stripe_status %}
+                  <span class="badge bg-info ms-2">Stripe: {{ transaccion.stripe_status }}</span>
+                {% endif %}
+              </div>
+              <a class="btn btn-sm btn-primary" href="{% url 'transacciones:iniciar_pago_tarjeta' transaccion.id %}">
+                <i class="bi bi-link-45deg"></i> Link de pago (Stripe)
+              </a>
+            </div>
+          {% endif %}
+
+          <form method="post" novalidate>
             {% csrf_token %}
 
-            <div class="row">
+            <div class="row g-3">
               <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="{{ form.cliente.id_for_label }}" class="form-label">
-                    <strong>Cliente *</strong>
-                  </label>
-                  {{ form.cliente }}
-                  {% if form.cliente.errors %}
-                    <div class="invalid-feedback d-block">
-                      {{ form.cliente.errors.0 }}
-                    </div>
-                  {% endif %}
-                </div>
+                <label for="{{ form.cliente.id_for_label }}" class="form-label">Cliente *</label>
+                {% render_field form.cliente class+="form-select" %}
+                {% if form.cliente.errors %}
+                  <div class="invalid-feedback d-block">{{ form.cliente.errors.0 }}</div>
+                {% endif %}
               </div>
 
               <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="{{ form.tipo.id_for_label }}" class="form-label">
-                    <strong>Tipo de Operación *</strong>
-                  </label>
-                  {{ form.tipo }}
-                  {% if form.tipo.errors %}
-                    <div class="invalid-feedback d-block">
-                      {{ form.tipo.errors.0 }}
-                    </div>
-                  {% endif %}
-                  <div class="form-text">
-                    Seleccione si el cliente compra o vende divisas
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="{{ form.moneda.id_for_label }}" class="form-label">
-                    <strong>Moneda *</strong>
-                  </label>
-                  {{ form.moneda }}
-                  {% if form.moneda.errors %}
-                    <div class="invalid-feedback d-block">
-                      {{ form.moneda.errors.0 }}
-                    </div>
-                  {% endif %}
-                </div>
+                <label for="{{ form.tipo.id_for_label }}" class="form-label">Tipo de Operación *</label>
+                {% render_field form.tipo class+="form-select" %}
+                {% if form.tipo.errors %}
+                  <div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">Seleccione si el cliente compra o vende divisas</div>
               </div>
 
               <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="{{ form.monto_operado.id_for_label }}" class="form-label">
-                    <strong>Monto en Moneda *</strong>
-                  </label>
-                  {{ form.monto_operado }}
-                  {% if form.monto_operado.errors %}
-                    <div class="invalid-feedback d-block">
-                      {{ form.monto_operado.errors.0 }}
-                    </div>
-                  {% endif %}
-                  <div class="form-text">
-                    Ejemplo: 1000 USD
-                  </div>
-                </div>
+                <label for="{{ form.moneda.id_for_label }}" class="form-label">Moneda *</label>
+                {% render_field form.moneda class+="form-select" %}
+                {% if form.moneda.errors %}
+                  <div class="invalid-feedback d-block">{{ form.moneda.errors.0 }}</div>
+                {% endif %}
               </div>
-            </div>
 
-            <div class="row">
-              <div class="col-md-12">
-                <div class="mb-3">
-                  <label for="{{ form.medio_pago.id_for_label }}" class="form-label">
-                    <strong>Medio de Pago *</strong>
-                  </label>
-                  {{ form.medio_pago }}
-                  {% if form.medio_pago.errors %}
-                    <div class="invalid-feedback d-block">
-                      {{ form.medio_pago.errors.0 }}
-                    </div>
-                  {% endif %}
-                  <div class="form-text">
-                    Seleccione el método de pago del cliente
-                  </div>
+              <div class="col-md-6">
+                <label for="{{ form.monto_operado.id_for_label }}" class="form-label">Monto en Moneda *</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-currency-exchange"></i></span>
+                  {% render_field form.monto_operado class+="form-control text-end" placeholder="Ej.: 1000" %}
                 </div>
+                {% if form.monto_operado.errors %}
+                  <div class="invalid-feedback d-block">{{ form.monto_operado.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">Ingrese el monto en la moneda seleccionada (p. ej., 1000 USD).</div>
+              </div>
+
+              <div class="col-12">
+                <label for="{{ form.medio_pago.id_for_label }}" class="form-label">Medio de Pago *</label>
+                {% render_field form.medio_pago class+="form-select" %}
+                {% if form.medio_pago.errors %}
+                  <div class="invalid-feedback d-block">{{ form.medio_pago.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">Seleccione el método de pago del cliente.</div>
               </div>
             </div>
 
             {% if transaccion %}
-              <div class="alert alert-info">
+              <div class="alert alert-info mt-4 mb-0" role="alert">
                 <i class="bi bi-calculator"></i>
-                <strong>Tasa aplicada:</strong> {{ transaccion.tasa_aplicada }}<br>
-                <strong>Comisión:</strong> {{ transaccion.comision }}<br>
-                <strong>Monto en PYG:</strong> {{ transaccion.monto_pyg }}
+                <strong class="ms-1">Resumen aplicado:</strong>
+                <div class="row mt-2 g-2">
+                  <div class="col-md-4"><span class="text-muted">Tasa</span><br><span class="fw-semibold">{{ transaccion.tasa_aplicada }}</span></div>
+                  <div class="col-md-4"><span class="text-muted">Comisión</span><br><span class="fw-semibold">{{ transaccion.comision }}</span></div>
+                  <div class="col-md-4"><span class="text-muted">Monto en PYG</span><br><span class="fw-semibold">{{ transaccion.monto_pyg }}</span></div>
+                </div>
               </div>
             {% endif %}
 
             {% if form.non_field_errors %}
-              <div class="alert alert-danger">
+              <div class="alert alert-danger mt-3" role="alert">
                 {{ form.non_field_errors }}
               </div>
             {% endif %}
 
-            <div class="mb-3">
+            <div class="d-flex align-items-center gap-2 mt-4">
               <button type="button" id="btn-calcular" class="btn btn-outline-info">
                 <i class="bi bi-calculator"></i> Calcular Cotización
               </button>
+              <div id="resultado-calculo" class="alert alert-info py-2 px-3 mb-0 d-none"></div>
             </div>
+        </div>
 
-            <div id="resultado-calculo" class="alert alert-info d-none"></div>
-
-            <div class="d-flex gap-2">
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <div class="text-muted small">
+            <i class="bi bi-shield-lock"></i> Validaciones activas y registro de auditoría
+          </div>
+          <div class="d-flex gap-2">
+            {% if transaccion and transaccion.medio_pago and transaccion.medio_pago.tipo == "TC" %}
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Guardar cambios
+              </button>
+            {% else %}
               <button type="submit" class="btn btn-primary">
                 {% if transaccion %}
                   <i class="bi bi-check-lg"></i> Actualizar Transacción
@@ -155,12 +159,14 @@
                   <i class="bi bi-cash-coin"></i> Realizar Transacción
                 {% endif %}
               </button>
-              <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-secondary">
-                <i class="bi bi-x-lg"></i> Cancelar
-              </a>
-            </div>
+            {% endif %}
+            <a href="{% url 'transacciones:transacciones_list' %}" class="btn btn-secondary">
+              <i class="bi bi-x-lg"></i> Cancelar
+            </a>
+          </div>
           </form>
         </div>
+
       </div>
     </div>
   </div>
@@ -169,7 +175,24 @@
 
 {% block extra_js %}
 <script>
-  // Temporizador de sesión
+  // ---- CSRF (cookie) ----
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const CSRF_TOKEN = getCookie('csrftoken');
+
+  // ---- Temporizador de sesión ----
   let seconds = 120;
   const timerSpan = document.getElementById('timeout-seconds');
   const interval = setInterval(function() {
@@ -182,44 +205,68 @@
     }
   }, 1000);
 
-  // Cálculo de cotización
-  document.getElementById("btn-calcular").addEventListener("click", function() {
-    const cliente = document.getElementById("id_cliente").value;
-    const tipo = document.getElementById("id_tipo").value;
-    const moneda = document.getElementById("id_moneda").value;
-    const monto = document.getElementById("id_monto_operado").value;
-
-    if (!cliente || !tipo || !moneda || !monto) {
-      alert("Complete cliente, tipo, moneda y monto antes de calcular.");
-      return;
-    }
-
-    fetch("{% url 'transacciones:calcular_api' %}", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": "{{ csrf_token }}"
-      },
-      body: JSON.stringify({
-        cliente: cliente,
-        tipo: tipo,
-        moneda: moneda,
-        monto_operado: monto
-      })
-    })
-    .then(resp => resp.json())
-    .then(data => {
-      const div = document.getElementById("resultado-calculo");
-      div.classList.remove("d-none");
-      div.innerHTML = `
-        <strong>Tasa aplicada:</strong> ${data.tasa_aplicada}<br>
-        <strong>Comisión:</strong> ${data.comision}<br>
-        <strong>Monto en PYG:</strong> ${data.monto_pyg}
-      `;
-    })
-    .catch(err => {
-      alert("Error en cálculo: " + err);
+  // ---- Mejora UX: formateo ligero del monto (solo visual) ----
+  const montoInput = document.getElementById("id_monto_operado");
+  if (montoInput) {
+    montoInput.addEventListener("focus", () => montoInput.select());
+    montoInput.addEventListener("blur", () => {
+      const v = montoInput.value.replace(/\./g, '').replace(/,/g, '.');
+      if (!isNaN(v) && v !== '') {
+        // mostramos con separadores sin alterar el valor decimal subyacente
+        const n = Number(v);
+        montoInput.value = n.toLocaleString('es-PY', { maximumFractionDigits: 2, useGrouping: true });
+      }
     });
-  });
+  }
+
+  // ---- Cálculo de cotización ----
+  const btnCalcular = document.getElementById("btn-calcular");
+  if (btnCalcular) {
+    btnCalcular.addEventListener("click", function() {
+      const cliente = document.getElementById("id_cliente").value;
+      const tipo    = document.getElementById("id_tipo").value;
+      const moneda  = document.getElementById("id_moneda").value;
+      const rawMonto = document.getElementById("id_monto_operado").value || "";
+      const monto   = rawMonto.replace(/\./g, '').replace(/\s/g, '').replace(',', '.');
+
+      if (!cliente || !tipo || !moneda || !monto) {
+        alert("Complete cliente, tipo, moneda y monto antes de calcular.");
+        return;
+      }
+
+      const btn = btnCalcular;
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Calculando...';
+
+      fetch("{% url 'transacciones:calcular_api' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+        body: JSON.stringify({ cliente, tipo, moneda, monto_operado: monto })
+      })
+      .then(resp => {
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return resp.json();
+      })
+      .then(data => {
+        const div = document.getElementById("resultado-calculo");
+        div.classList.remove("d-none");
+        div.innerHTML = `
+          <i class="bi bi-info-circle"></i>
+          <strong class="ms-1">Resultado:</strong>
+          <span class="ms-2">Tasa:</span> <span class="fw-semibold">${data.tasa_aplicada}</span>
+          <span class="ms-3">Comisión:</span> <span class="fw-semibold">${data.comision}</span>
+          <span class="ms-3">Monto PYG:</span> <span class="fw-semibold">${data.monto_pyg}</span>
+        `;
+      })
+      .catch(err => {
+        alert("Error en cálculo: " + err);
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      });
+    });
+  }
 </script>
 {% endblock %}

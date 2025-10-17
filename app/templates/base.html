@@ -96,7 +96,43 @@
                   {% endif %}
                 </ul>
               </li>
-      {% endif %}
+              
+          {% endif %}
+              <!-- Tauser -->
+              <li class="nav-group {% if 'tauser' in request.resolver_match.app_name %}show{% endif %}">
+                <a class="nav-link nav-group-toggle" href="#">
+                  <i class="nav-icon bi bi-person-badge"></i>
+                  Tauser
+                </a>
+                <ul class="nav-group-items compact">
+                  
+                  <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'tramitar_transaccion' %}active{% endif %}"
+                        href="{% url 'tauser:tramitar_transacciones' %}">
+                      <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                      Tramitar Transacciones
+                    </a>
+                  </li>
+             
+                 
+                  <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'tauser_create' %}active{% endif %}"
+                        href="{% url 'tauser:nuevo_tauser' %}">
+                      <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                      Nuevo Tauser
+                    </a>
+                  </li>
+                 
+                
+                  <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'tauser_list' %}active{% endif %}"
+                        href="{% url 'tauser:lista_tausers' %}">
+                      <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+                      Lista de Tausers
+                    </a>
+                  </li>
+                </ul>
+              </li>
 
         {% if request.user|has_any_permission:'usuarios.list, usuarios.create' %}
         <li class="nav-group {% if 'usuarios' in request.resolver_match.url_name or 'usuario' in request.resolver_match.url_name %}show{% endif %}">

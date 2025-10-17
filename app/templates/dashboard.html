@@ -46,7 +46,6 @@
                   <th class="border-0 text-center">Variación</th>
                   <th class="border-0">Fuente</th>
                   <th class="border-0 text-center">Actualizado</th>
-                  <th class="border-0 text-center">Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,13 +75,6 @@
                   </td>
                   <td class="text-center">
                     <small class="text-muted">{{ tasa.fecha_actualizacion|date:"d/m H:i" }}</small>
-                  </td>
-                  <td class="text-center">
-                    {% if tasa.activa %}
-                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Activa</span>
-                    {% else %}
-                    <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Histórica</span>
-                    {% endif %}
                   </td>
                 </tr>
                 {% empty %}
